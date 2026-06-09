@@ -1,0 +1,19 @@
+{
+  "name": "library-app-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Express + PostgreSQL backend for the Library App",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
