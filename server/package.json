@@ -6,12 +6,20 @@
   "description": "Express + PostgreSQL backend for the Library App",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "migrate:create": "node --env-file=.env node_modules/.bin/node-pg-migrate create --migration-file-language sql",
+    "migrate:up": "node --env-file=.env node_modules/.bin/node-pg-migrate up",
+    "migrate:down": "node --env-file=.env node_modules/.bin/node-pg-migrate down"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "node-pg-migrate": "^8.0.4",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
