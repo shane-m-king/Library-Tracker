@@ -336,4 +336,53 @@ router.patch('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// DELETE /api/library/:id
+// Remove a book from the user's collection. If they also have loan records for
+// that same book (e.g. they'd lent it out), those are removed too: once the book
+// is gone from your library, any loan tied to it is orphaned. loans and user_books
+// are sibling tables with no FK between them, so the DB won't cascade this for us -
+// we delete from both inside ONE transaction so they succeed or fail together.
+router.delete('/:id', requireAuth, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(404).json({ error: 'library entry not found' });
+  }
+
+  try {
+    const outcome = await withTransaction(async (client) => {
+      // Remove the library entry, scoped to its owner. RETURNING book_id does two
+      // jobs: it confirms a row was actually deleted (so it was ours), and it tells
+      // us which catalog book to clean up loans for.
+      const removed = await client.query(
+        `DELETE FROM user_books
+          WHERE id = $1 AND user_id = $2
+          RETURNING book_id`,
+        [req.params.id, req.userId]
+      );
+
+      if (removed.rowCount === 0) {
+        return null; // nothing matched -> the COMMIT is a harmless no-op
+      }
+
+      const { book_id } = removed.rows[0];
+
+      // Clear this user's loan records for that book (both lent-out and borrowed).
+      const loans = await client.query(
+        `DELETE FROM loans
+          WHERE user_id = $1 AND book_id = $2`,
+        [req.userId, book_id]
+      );
+
+      return { loansRemoved: loans.rowCount };
+    });
+
+    if (outcome === null) {
+      return res.status(404).json({ error: 'library entry not found' });
+    }
+    return res.json({ ok: true, loansRemoved: outcome.loansRemoved });
+  } catch (err) {
+    console.error('Deleting library entry failed:', err);
+    return res.status(500).json({ error: 'something went wrong' });
+  }
+});
+
 export default router;
