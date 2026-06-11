@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
-import { withTransaction } from '../db.js';
+import { query, withTransaction } from '../db.js';
 import { resolveBook, cacheBook } from '../services/bookCache.js';
 import { getLibraryItems, getLibraryItem } from '../services/libraryItems.js';
 
@@ -186,19 +186,22 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const idPlaceholder = `$${values.length - 1}`;
   const userPlaceholder = `$${values.length}`;
 
-  // Changing quantity touches the lending invariant (active lent-out copies must
-  // not exceed quantity owned), so it needs the locked guard below. Other edits
-  // don't, so we can skip the extra work for them.
-  const quantityChanging = Object.prototype.hasOwnProperty.call(body, 'quantity');
-
   const updateSql = `UPDATE user_books
           SET ${sets.join(', ')}
         WHERE id = ${idPlaceholder} AND user_id = ${userPlaceholder}
         RETURNING id`;
 
+  // Changing quantity touches the lending invariant (active lent-out copies must
+  // not exceed quantity owned), so that path needs an atomic, locked guard. Every
+  // other edit is a plain field update with no invariant, so it skips the
+  // transaction entirely - a single UPDATE plus a read-after-write.
+  const quantityChanging = Object.prototype.hasOwnProperty.call(body, 'quantity');
+
   try {
-    const outcome = await withTransaction(async (client) => {
-      if (quantityChanging) {
+    let outcome;
+
+    if (quantityChanging) {
+      outcome = await withTransaction(async (client) => {
         // Lock THIS user_books row for the duration of the transaction. This
         // serializes against a concurrent loan-creation (which locks the same
         // row), so the count-then-update below can't race: we won't approve a
@@ -224,16 +227,27 @@ router.patch('/:id', requireAuth, async (req, res) => {
         if (body.quantity < lentOut) {
           return { conflict: lentOut };
         }
+
+        const result = await client.query(updateSql, values);
+        if (result.rowCount === 0) return { notFound: true };
+
+        // Re-read through the shared query so PATCH returns the same joined,
+        // book-nested shape as GET. The transaction client sees our own UPDATE.
+        const item = await getLibraryItem({ userId: req.userId, id: req.params.id }, client);
+        return { item };
+      });
+    } else {
+      // No invariant in play -> no transaction. Update, then read the row back to
+      // return GET's shape. The brief gap between the two writes/reads is harmless:
+      // a user only ever edits their own rows.
+      const result = await query(updateSql, values);
+      if (result.rowCount === 0) {
+        outcome = { notFound: true };
+      } else {
+        const item = await getLibraryItem({ userId: req.userId, id: req.params.id });
+        outcome = { item };
       }
-
-      const result = await client.query(updateSql, values);
-      if (result.rowCount === 0) return { notFound: true };
-
-      // Re-read through the shared query so PATCH returns the same joined,
-      // book-nested shape as GET. The transaction client sees our own UPDATE.
-      const item = await getLibraryItem({ userId: req.userId, id: req.params.id }, client);
-      return { item };
-    });
+    }
 
     if (outcome.notFound) {
       return res.status(404).json({ error: 'library entry not found' });
@@ -257,11 +271,13 @@ router.patch('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/library/:id
-// Remove a book from the user's collection. If they also have loan records for
-// that same book (e.g. they'd lent it out), those are removed too: once the book
-// is gone from your library, any loan tied to it is orphaned. loans and user_books
-// are sibling tables with no FK between them, so the DB won't cascade this for us -
-// we delete from both inside ONE transaction so they succeed or fail together.
+// Remove a book from the user's collection. Any LENT-OUT loans for that book go
+// too: those records exist because you own a copy, so once the owned entry is
+// gone they're orphaned. BORROWED loans are deliberately left alone - borrowing a
+// book doesn't depend on owning it, so removing your owned entry shouldn't erase
+// an unrelated borrow. loans and user_books are sibling tables with no FK between
+// them, so the DB won't cascade this for us - we do both writes inside ONE
+// transaction so they succeed or fail together.
 router.delete('/:id', requireAuth, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) {
     return res.status(404).json({ error: 'library entry not found' });
@@ -285,10 +301,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
       const { book_id } = removed.rows[0];
 
-      // Clear this user's loan records for that book (both lent-out and borrowed).
+      // Clear only this user's LENT-OUT loans for that book; borrowed loans stay.
       const loans = await client.query(
         `DELETE FROM loans
-          WHERE user_id = $1 AND book_id = $2`,
+          WHERE user_id = $1 AND book_id = $2 AND direction = 'lent_out'`,
         [req.userId, book_id]
       );
 

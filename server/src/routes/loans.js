@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { query, withTransaction } from '../db.js';
 import { resolveBook, cacheBook } from '../services/bookCache.js';
+import { getLoanItems, getLoanItem } from '../services/loanItems.js';
 
 const router = Router();
 
@@ -18,31 +19,6 @@ const EDITABLE_LOAN_FIELDS = {
   returnedOn: 'returned_on',
   notes: 'notes',
 };
-
-// Shape a joined loan row into the API contract: loan fields on top (with a
-// convenience `active` flag), the catalog book nested under `book`.
-function toLoanItem(row) {
-  return {
-    id: row.id,
-    direction: row.direction,
-    counterpartyName: row.counterparty_name,
-    loanedOn: row.loaned_on,
-    dueDate: row.due_date,
-    returnedOn: row.returned_on,
-    active: row.returned_on === null, // not yet returned
-    notes: row.notes,
-    createdAt: row.created_at,
-    book: {
-      id: row.book_id,
-      googleVolumeId: row.google_volume_id,
-      title: row.title,
-      subtitle: row.subtitle,
-      authors: row.authors,
-      thumbnailUrl: row.thumbnail_url,
-      smallThumbnailUrl: row.small_thumbnail_url,
-    },
-  };
-}
 
 // POST /api/loans
 // Record a loan. Two directions, handled differently:
@@ -69,12 +45,6 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'counterpartyName is required' });
   }
 
-  // RETURNING shared by both branches. DATE columns are cast to text so they
-  // serialize as plain 'YYYY-MM-DD' instead of timezone-shiftable Date objects.
-  const returning = `RETURNING id, user_id, book_id, direction, counterparty_name,
-                  loaned_on::text AS loaned_on, due_date::text AS due_date,
-                  returned_on::text AS returned_on, notes, created_at`;
-
   try {
     if (direction === 'borrowed') {
       // Cache the book if we've never seen it, then record the loan.
@@ -82,14 +52,16 @@ router.post('/', requireAuth, async (req, res) => {
 
       const loan = await withTransaction(async (client) => {
         const bookId = existingId ?? (await cacheBook(client, volume));
-        const result = await client.query(
+        const inserted = await client.query(
           `INSERT INTO loans
              (user_id, book_id, direction, counterparty_name, loaned_on, due_date, notes)
            VALUES ($1, $2, 'borrowed', $3, COALESCE($4, CURRENT_DATE), $5, $6)
-           ${returning}`,
+           RETURNING id`,
           [req.userId, bookId, counterpartyName.trim(), loanedOn ?? null, dueDate ?? null, notes ?? null]
         );
-        return result.rows[0];
+        // Re-read through the shared query so the response is the same joined,
+        // book-nested shape GET returns. The client sees our own INSERT.
+        return getLoanItem({ userId: req.userId, id: inserted.rows[0].id }, client);
       });
 
       return res.status(201).json({ item: loan });
@@ -130,14 +102,17 @@ router.post('/', requireAuth, async (req, res) => {
         return { noCopies: { quantity, lentOut } };
       }
 
-      const result = await client.query(
+      const inserted = await client.query(
         `INSERT INTO loans
            (user_id, book_id, direction, counterparty_name, loaned_on, due_date, notes)
          VALUES ($1, $2, 'lent_out', $3, COALESCE($4, CURRENT_DATE), $5, $6)
-         ${returning}`,
+         RETURNING id`,
         [req.userId, bookId, counterpartyName.trim(), loanedOn ?? null, dueDate ?? null, notes ?? null]
       );
-      return { loan: result.rows[0] };
+      // Re-read through the shared query for the same shape GET returns. The
+      // transaction client sees our own INSERT.
+      const loan = await getLoanItem({ userId: req.userId, id: inserted.rows[0].id }, client);
+      return { loan };
     });
 
     if (outcome.notOwned) {
@@ -193,34 +168,8 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   try {
-    // Same optional-filter trick as the library list: each "$n IS NULL OR ..."
-    // clause is a no-op when that filter wasn't supplied. For active we compare the
-    // boolean expression (returned_on IS NULL) directly against the requested flag.
-    const result = await query(
-      `SELECT
-         l.id, l.direction, l.counterparty_name,
-         l.loaned_on::text  AS loaned_on,
-         l.due_date::text   AS due_date,
-         l.returned_on::text AS returned_on,
-         l.notes, l.created_at,
-         b.id AS book_id, b.google_volume_id, b.title, b.subtitle,
-         b.thumbnail_url, b.small_thumbnail_url,
-         COALESCE(
-           (SELECT array_agg(a.name ORDER BY ba.position)
-              FROM book_authors ba JOIN authors a ON a.id = ba.author_id
-             WHERE ba.book_id = b.id),
-           '{}'
-         ) AS authors
-       FROM loans l
-       JOIN books b ON b.id = l.book_id
-       WHERE l.user_id = $1
-         AND ($2::text IS NULL OR l.direction = $2)
-         AND ($3::boolean IS NULL OR (l.returned_on IS NULL) = $3)
-       ORDER BY l.created_at DESC`,
-      [req.userId, direction ?? null, active]
-    );
-
-    return res.json({ items: result.rows.map(toLoanItem) });
+    const items = await getLoanItems({ userId: req.userId, direction: direction ?? null, active });
+    return res.json({ items });
   } catch (err) {
     console.error('Listing loans failed:', err);
     return res.status(500).json({ error: 'something went wrong' });
@@ -272,16 +221,18 @@ router.patch('/:id', requireAuth, async (req, res) => {
       `UPDATE loans
           SET ${sets.join(', ')}
         WHERE id = ${idPlaceholder} AND user_id = ${userPlaceholder}
-        RETURNING id, user_id, book_id, direction, counterparty_name,
-                  loaned_on::text AS loaned_on, due_date::text AS due_date,
-                  returned_on::text AS returned_on, notes, created_at`,
+        RETURNING id`,
       values
     );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'loan not found' });
     }
-    return res.json({ item: result.rows[0] });
+    // Read the row back so PATCH returns GET's joined, book-nested shape. No
+    // transaction: loans carry no update-time invariant, so a plain
+    // read-after-write is fine (a user only edits their own rows).
+    const item = await getLoanItem({ userId: req.userId, id: req.params.id });
+    return res.json({ item });
   } catch (err) {
     if (err.code === '22007' || err.code === '22008') {
       return res
