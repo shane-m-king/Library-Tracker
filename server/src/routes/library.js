@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { query, withTransaction } from '../db.js';
-import { getVolume } from '../services/googleBooks.js';
+import { resolveBook, cacheBook } from '../services/bookCache.js';
 
 const router = Router();
 
@@ -16,6 +16,7 @@ const EDITABLE_FIELDS = {
   status: 'status',
   rating: 'rating',
   notes: 'notes',
+  quantity: 'quantity',
   acquiredDate: 'acquired_date',
   acquiredPlace: 'acquired_place',
 };
@@ -30,6 +31,7 @@ function toLibraryItem(row) {
     status: row.status,
     rating: row.rating,
     notes: row.notes,
+    quantity: row.quantity,
     acquiredDate: row.acquired_date,
     acquiredPlace: row.acquired_place,
     createdAt: row.created_at,
@@ -62,7 +64,7 @@ function toLibraryItem(row) {
 // creating the user_books row, all happen inside ONE transaction: it either fully
 // succeeds or fully rolls back, so we can never end up with a half-cached book.
 router.post('/', requireAuth, async (req, res) => {
-  const { googleVolumeId, status, rating, notes, acquiredDate, acquiredPlace } =
+  const { googleVolumeId, status, rating, notes, quantity, acquiredDate, acquiredPlace } =
     req.body ?? {};
 
   // --- Validate the request ---
@@ -75,91 +77,31 @@ router.post('/', requireAuth, async (req, res) => {
   if (rating != null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
     return res.status(400).json({ error: 'rating must be an integer from 1 to 5' });
   }
+  // quantity is optional on add and defaults to 1; if given it must be a whole
+  // number >= 1 (you can't own a fraction of a book, or fewer than one).
+  if (quantity != null && (!Number.isInteger(quantity) || quantity < 1)) {
+    return res.status(400).json({ error: 'quantity must be an integer >= 1' });
+  }
 
   try {
-    // Is this book already in our shared catalog? Cheap pre-check so we only call
-    // Google the FIRST time anyone adds this particular book; afterwards it's cached.
-    const cached = await query(
-      'SELECT id FROM books WHERE google_volume_id = $1',
-      [googleVolumeId]
-    );
-    let bookId = cached.rows[0]?.id ?? null;
-
-    // Not cached yet -> fetch the authoritative volume from Google. We do this
-    // BEFORE opening the transaction: never hold a DB transaction open across a
-    // slow network call.
-    let volume = null;
-    if (!bookId) {
-      volume = await getVolume(googleVolumeId);
-    }
+    // Figure out the catalog book (fetching from Google only if it's new) BEFORE
+    // opening the transaction - see the bookCache module for why the split exists.
+    const { bookId: existingId, volume } = await resolveBook(googleVolumeId);
 
     const userBook = await withTransaction(async (client) => {
-      // 1. Cache the book if it's new. ON CONFLICT keeps this safe even if another
-      //    request inserted it between our pre-check and now. The "DO UPDATE ... =
-      //    EXCLUDED" is a deliberate no-op whose only purpose is to make RETURNING
-      //    fire on conflict (DO NOTHING would hand back zero rows).
-      if (!bookId) {
-        const inserted = await client.query(
-          `INSERT INTO books
-             (google_volume_id, title, subtitle, description, publisher,
-              published_date, page_count, isbn_10, isbn_13,
-              thumbnail_url, small_thumbnail_url)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-           ON CONFLICT (google_volume_id)
-             DO UPDATE SET google_volume_id = EXCLUDED.google_volume_id
-           RETURNING id`,
-          [
-            volume.googleVolumeId, volume.title, volume.subtitle, volume.description,
-            volume.publisher, volume.publishedDate, volume.pageCount,
-            volume.isbn10, volume.isbn13, volume.thumbnailUrl, volume.smallThumbnailUrl,
-          ]
-        );
-        bookId = inserted.rows[0].id;
+      // Cache the book if it's new; otherwise reuse the existing catalog id.
+      const bookId = existingId ?? (await cacheBook(client, volume));
 
-        // 2. Authors: upsert each name into the lookup table, then link it to the
-        //    book, preserving author order via `position`.
-        for (let i = 0; i < volume.authors.length; i++) {
-          const author = await client.query(
-            `INSERT INTO authors (name) VALUES ($1)
-             ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-             RETURNING id`,
-            [volume.authors[i]]
-          );
-          await client.query(
-            `INSERT INTO book_authors (book_id, author_id, position)
-             VALUES ($1, $2, $3)
-             ON CONFLICT (book_id, author_id) DO NOTHING`,
-            [bookId, author.rows[0].id, i + 1]
-          );
-        }
-
-        // 3. Genres: same upsert-then-link, no ordering to preserve.
-        for (const name of volume.categories) {
-          const genre = await client.query(
-            `INSERT INTO genres (name) VALUES ($1)
-             ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-             RETURNING id`,
-            [name]
-          );
-          await client.query(
-            `INSERT INTO book_genres (book_id, genre_id)
-             VALUES ($1, $2)
-             ON CONFLICT (book_id, genre_id) DO NOTHING`,
-            [bookId, genre.rows[0].id]
-          );
-        }
-      }
-
-      // 4. Finally, create THIS user's relationship to the book.
+      // Create THIS user's relationship to the book.
       const result = await client.query(
         `INSERT INTO user_books
-           (user_id, book_id, status, rating, notes, acquired_date, acquired_place)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, user_id, book_id, status, rating, notes,
+           (user_id, book_id, status, rating, notes, quantity, acquired_date, acquired_place)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, user_id, book_id, status, rating, notes, quantity,
                    acquired_date, acquired_place, created_at, updated_at`,
         [
           req.userId, bookId, status, rating ?? null, notes ?? null,
-          acquiredDate ?? null, acquiredPlace ?? null,
+          quantity ?? 1, acquiredDate ?? null, acquiredPlace ?? null,
         ]
       );
       return result.rows[0];
@@ -213,7 +155,7 @@ router.get('/', requireAuth, async (req, res) => {
     // within a single query: pass the status to filter, or null for "all".
     const result = await query(
       `SELECT
-         ub.id, ub.status, ub.rating, ub.notes,
+         ub.id, ub.status, ub.rating, ub.notes, ub.quantity,
          ub.acquired_date::text AS acquired_date, ub.acquired_place,
          ub.created_at, ub.updated_at,
          b.id AS book_id, b.google_volume_id, b.title, b.subtitle,
@@ -287,6 +229,10 @@ router.patch('/:id', requireAuth, async (req, res) => {
     ) {
       return res.status(400).json({ error: `${field} must be a string or null` });
     }
+    // quantity is NOT NULL in the schema, so unlike the others it can't be cleared.
+    if (field === 'quantity' && (value === null || !Number.isInteger(value) || value < 1)) {
+      return res.status(400).json({ error: 'quantity must be an integer >= 1' });
+    }
 
     values.push(value);
     sets.push(`${column} = $${values.length}`); // $1, $2, ... in insertion order
@@ -309,21 +255,62 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const idPlaceholder = `$${values.length - 1}`;
   const userPlaceholder = `$${values.length}`;
 
-  try {
-    const result = await query(
-      `UPDATE user_books
+  // Changing quantity touches the lending invariant (active lent-out copies must
+  // not exceed quantity owned), so it needs the locked guard below. Other edits
+  // don't, so we can skip the extra work for them.
+  const quantityChanging = Object.prototype.hasOwnProperty.call(body, 'quantity');
+
+  const updateSql = `UPDATE user_books
           SET ${sets.join(', ')}
         WHERE id = ${idPlaceholder} AND user_id = ${userPlaceholder}
-        RETURNING id, user_id, book_id, status, rating, notes,
+        RETURNING id, user_id, book_id, status, rating, notes, quantity,
                   acquired_date::text AS acquired_date, acquired_place,
-                  created_at, updated_at`,
-      values
-    );
+                  created_at, updated_at`;
 
-    if (result.rowCount === 0) {
+  try {
+    const outcome = await withTransaction(async (client) => {
+      if (quantityChanging) {
+        // Lock THIS user_books row for the duration of the transaction. This
+        // serializes against a concurrent loan-creation (which locks the same
+        // row), so the count-then-update below can't race: we won't approve a
+        // quantity that another in-flight request is about to invalidate.
+        const locked = await client.query(
+          `SELECT book_id FROM user_books
+            WHERE id = $1 AND user_id = $2
+            FOR UPDATE`,
+          [req.params.id, req.userId]
+        );
+        if (locked.rowCount === 0) return { notFound: true };
+
+        // How many copies are out on active (not-yet-returned) lent-out loans?
+        const lent = await client.query(
+          `SELECT count(*)::int AS n FROM loans
+            WHERE user_id = $1 AND book_id = $2
+              AND direction = 'lent_out' AND returned_on IS NULL`,
+          [req.userId, locked.rows[0].book_id]
+        );
+        const lentOut = lent.rows[0].n;
+
+        // You can't own fewer copies than you currently have lent out.
+        if (body.quantity < lentOut) {
+          return { conflict: lentOut };
+        }
+      }
+
+      const result = await client.query(updateSql, values);
+      if (result.rowCount === 0) return { notFound: true };
+      return { item: result.rows[0] };
+    });
+
+    if (outcome.notFound) {
       return res.status(404).json({ error: 'library entry not found' });
     }
-    return res.json({ item: result.rows[0] });
+    if (outcome.conflict != null) {
+      return res.status(409).json({
+        error: `quantity can't be lower than the ${outcome.conflict} copy/copies currently lent out`,
+      });
+    }
+    return res.json({ item: outcome.item });
   } catch (err) {
     // A malformed acquiredDate reaches Postgres as an invalid date value.
     if (err.code === '22007' || err.code === '22008') {
