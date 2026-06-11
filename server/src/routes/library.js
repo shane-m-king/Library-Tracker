@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
-import { query, withTransaction } from '../db.js';
+import { withTransaction } from '../db.js';
 import { resolveBook, cacheBook } from '../services/bookCache.js';
+import { getLibraryItems, getLibraryItem } from '../services/libraryItems.js';
 
 const router = Router();
 
@@ -20,39 +21,6 @@ const EDITABLE_FIELDS = {
   acquiredDate: 'acquired_date',
   acquiredPlace: 'acquired_place',
 };
-
-// Shape one joined DB row into the API's response contract: the user's personal
-// fields at the top level, with the shared catalog data nested under `book`.
-// Keeping this mapping explicit means our column names aren't leaked straight to
-// clients - the API shape is something we choose on purpose.
-function toLibraryItem(row) {
-  return {
-    id: row.id,
-    status: row.status,
-    rating: row.rating,
-    notes: row.notes,
-    quantity: row.quantity,
-    acquiredDate: row.acquired_date,
-    acquiredPlace: row.acquired_place,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    book: {
-      id: row.book_id,
-      googleVolumeId: row.google_volume_id,
-      title: row.title,
-      subtitle: row.subtitle,
-      authors: row.authors,
-      genres: row.genres,
-      publishedDate: row.published_date,
-      pageCount: row.page_count,
-      isbn10: row.isbn_10,
-      isbn13: row.isbn_13,
-      publisher: row.publisher,
-      thumbnailUrl: row.thumbnail_url,
-      smallThumbnailUrl: row.small_thumbnail_url,
-    },
-  };
-}
 
 // POST /api/library
 // Add a book to the logged-in user's collection.
@@ -88,26 +56,29 @@ router.post('/', requireAuth, async (req, res) => {
     // opening the transaction - see the bookCache module for why the split exists.
     const { bookId: existingId, volume } = await resolveBook(googleVolumeId);
 
-    const userBook = await withTransaction(async (client) => {
+    const item = await withTransaction(async (client) => {
       // Cache the book if it's new; otherwise reuse the existing catalog id.
       const bookId = existingId ?? (await cacheBook(client, volume));
 
       // Create THIS user's relationship to the book.
-      const result = await client.query(
+      const inserted = await client.query(
         `INSERT INTO user_books
            (user_id, book_id, status, rating, notes, quantity, acquired_date, acquired_place)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, user_id, book_id, status, rating, notes, quantity,
-                   acquired_date, acquired_place, created_at, updated_at`,
+         RETURNING id`,
         [
           req.userId, bookId, status, rating ?? null, notes ?? null,
           quantity ?? 1, acquiredDate ?? null, acquiredPlace ?? null,
         ]
       );
-      return result.rows[0];
+
+      // Re-read the row through the shared query so the response is the same
+      // joined, camelCase, book-nested shape GET returns - not a raw row. We pass
+      // the transaction client so this read sees the INSERT we just made.
+      return getLibraryItem({ userId: req.userId, id: inserted.rows[0].id }, client);
     });
 
-    return res.status(201).json({ item: userBook });
+    return res.status(201).json({ item });
   } catch (err) {
     // The user already has this book (UNIQUE(user_id, book_id)). 23505 = unique_violation.
     if (err.code === '23505') {
@@ -140,48 +111,8 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   try {
-    // Authors and genres are each a one-to-many off the book. If we JOINed both
-    // in directly, a book with 1 author and 3 genres would fan out into 3 rows
-    // (and 2 authors x 3 genres -> 6), corrupting our aggregates. Instead we build
-    // each array in its own correlated subquery, so they're computed independently
-    // and never multiply against each other. COALESCE(..., '{}') yields an empty
-    // array (not NULL) when a book has no authors/genres.
-    //
-    // acquired_date is cast to text so it serializes as a plain 'YYYY-MM-DD'
-    // string; left as a DATE, the pg driver hands back a JS Date that can shift by
-    // a day across timezones when converted to JSON.
-    //
-    // The ($2 IS NULL OR ub.status = $2) trick makes the status filter optional
-    // within a single query: pass the status to filter, or null for "all".
-    const result = await query(
-      `SELECT
-         ub.id, ub.status, ub.rating, ub.notes, ub.quantity,
-         ub.acquired_date::text AS acquired_date, ub.acquired_place,
-         ub.created_at, ub.updated_at,
-         b.id AS book_id, b.google_volume_id, b.title, b.subtitle,
-         b.published_date, b.page_count, b.isbn_10, b.isbn_13, b.publisher,
-         b.thumbnail_url, b.small_thumbnail_url,
-         COALESCE(
-           (SELECT array_agg(a.name ORDER BY ba.position)
-              FROM book_authors ba JOIN authors a ON a.id = ba.author_id
-             WHERE ba.book_id = b.id),
-           '{}'
-         ) AS authors,
-         COALESCE(
-           (SELECT array_agg(g.name ORDER BY g.name)
-              FROM book_genres bg JOIN genres g ON g.id = bg.genre_id
-             WHERE bg.book_id = b.id),
-           '{}'
-         ) AS genres
-       FROM user_books ub
-       JOIN books b ON b.id = ub.book_id
-       WHERE ub.user_id = $1
-         AND ($2::text IS NULL OR ub.status = $2)
-       ORDER BY ub.created_at DESC`,
-      [req.userId, status ?? null]
-    );
-
-    return res.json({ items: result.rows.map(toLibraryItem) });
+    const items = await getLibraryItems({ userId: req.userId, status: status ?? null });
+    return res.json({ items });
   } catch (err) {
     console.error('Listing library failed:', err);
     return res.status(500).json({ error: 'something went wrong' });
@@ -263,9 +194,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const updateSql = `UPDATE user_books
           SET ${sets.join(', ')}
         WHERE id = ${idPlaceholder} AND user_id = ${userPlaceholder}
-        RETURNING id, user_id, book_id, status, rating, notes, quantity,
-                  acquired_date::text AS acquired_date, acquired_place,
-                  created_at, updated_at`;
+        RETURNING id`;
 
   try {
     const outcome = await withTransaction(async (client) => {
@@ -299,7 +228,11 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
       const result = await client.query(updateSql, values);
       if (result.rowCount === 0) return { notFound: true };
-      return { item: result.rows[0] };
+
+      // Re-read through the shared query so PATCH returns the same joined,
+      // book-nested shape as GET. The transaction client sees our own UPDATE.
+      const item = await getLibraryItem({ userId: req.userId, id: req.params.id }, client);
+      return { item };
     });
 
     if (outcome.notFound) {
