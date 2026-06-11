@@ -7,6 +7,19 @@ const router = Router();
 
 const VALID_STATUSES = ['owned', 'wishlist'];
 
+// The only fields a PATCH may change, mapped from their API name to their DB
+// column. Anything else in the request body is ignored. Whitelisting like this
+// does double duty: it blocks mass-assignment (a client can't sneak in user_id,
+// book_id, etc.), and it's what keeps the dynamic UPDATE below injection-safe -
+// column names come from THIS object, never from user input.
+const EDITABLE_FIELDS = {
+  status: 'status',
+  rating: 'rating',
+  notes: 'notes',
+  acquiredDate: 'acquired_date',
+  acquiredPlace: 'acquired_place',
+};
+
 // Shape one joined DB row into the API's response contract: the user's personal
 // fields at the top level, with the shared catalog data nested under `book`.
 // Keeping this mapping explicit means our column names aren't leaked straight to
@@ -229,6 +242,96 @@ router.get('/', requireAuth, async (req, res) => {
     return res.json({ items: result.rows.map(toLibraryItem) });
   } catch (err) {
     console.error('Listing library failed:', err);
+    return res.status(500).json({ error: 'something went wrong' });
+  }
+});
+
+// PATCH /api/library/:id
+// Partially update one library entry. PATCH semantics: only the fields the client
+// actually sends are touched. We deliberately distinguish "key omitted" (leave it
+// as-is) from "key sent as null" (explicitly clear it) - that's the core
+// difference between a PATCH and a full-replacement PUT.
+router.patch('/:id', requireAuth, async (req, res) => {
+  // The id addresses a row by its surrogate key, which is a BIGINT. Reject a
+  // non-numeric id up front so it can't reach Postgres and blow up as a type error.
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(404).json({ error: 'library entry not found' });
+  }
+
+  const body = req.body ?? {};
+  const sets = [];
+  const values = [];
+
+  // Build the SET clause from only the editable fields that are actually present.
+  for (const [field, column] of Object.entries(EDITABLE_FIELDS)) {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) continue; // omitted -> leave alone
+    const value = body[field];
+
+    // Per-field validation.
+    if (field === 'status' && !VALID_STATUSES.includes(value)) {
+      return res.status(400).json({ error: "status must be 'owned' or 'wishlist'" });
+    }
+    if (
+      field === 'rating' &&
+      value !== null &&
+      (!Number.isInteger(value) || value < 1 || value > 5)
+    ) {
+      return res
+        .status(400)
+        .json({ error: 'rating must be an integer from 1 to 5, or null to clear' });
+    }
+    if (
+      (field === 'notes' || field === 'acquiredPlace') &&
+      value !== null &&
+      typeof value !== 'string'
+    ) {
+      return res.status(400).json({ error: `${field} must be a string or null` });
+    }
+
+    values.push(value);
+    sets.push(`${column} = $${values.length}`); // $1, $2, ... in insertion order
+  }
+
+  if (sets.length === 0) {
+    return res.status(400).json({ error: 'no updatable fields provided' });
+  }
+
+  // Always bump updated_at. Postgres won't do this on its own - the column's
+  // DEFAULT now() only fires on INSERT, not UPDATE. (A BEFORE UPDATE trigger could
+  // automate it; setting it explicitly is simpler and keeps the behavior visible.)
+  sets.push('updated_at = now()');
+
+  // id and user_id go on the end as the WHERE params. Scoping to user_id is the
+  // authorization check: a user can only ever change their OWN rows. A row owned
+  // by someone else simply doesn't match -> 404, which also avoids confirming the
+  // row exists at all.
+  values.push(req.params.id, req.userId);
+  const idPlaceholder = `$${values.length - 1}`;
+  const userPlaceholder = `$${values.length}`;
+
+  try {
+    const result = await query(
+      `UPDATE user_books
+          SET ${sets.join(', ')}
+        WHERE id = ${idPlaceholder} AND user_id = ${userPlaceholder}
+        RETURNING id, user_id, book_id, status, rating, notes,
+                  acquired_date::text AS acquired_date, acquired_place,
+                  created_at, updated_at`,
+      values
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'library entry not found' });
+    }
+    return res.json({ item: result.rows[0] });
+  } catch (err) {
+    // A malformed acquiredDate reaches Postgres as an invalid date value.
+    if (err.code === '22007' || err.code === '22008') {
+      return res
+        .status(400)
+        .json({ error: 'acquiredDate must be a valid date (YYYY-MM-DD)' });
+    }
+    console.error('Updating library entry failed:', err);
     return res.status(500).json({ error: 'something went wrong' });
   }
 });
