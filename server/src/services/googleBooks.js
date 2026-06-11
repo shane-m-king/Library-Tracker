@@ -72,3 +72,27 @@ export async function searchBooks(queryText) {
   const items = data.items ?? []; // no matches -> items is absent
   return items.map(normalizeVolume);
 }
+
+// Fetch ONE specific volume by its Google id and return it normalized. Used when
+// a user adds a book to their library: rather than trust the catalog data the
+// client sends, the server re-fetches the authoritative record from Google. The
+// single-volume endpoint returns the volume object directly (not wrapped in an
+// `items` array like search), and normalizeVolume already reads exactly that shape.
+export async function getVolume(volumeId) {
+  const params = new URLSearchParams();
+  if (process.env.GOOGLE_BOOKS_API_KEY) {
+    params.set('key', process.env.GOOGLE_BOOKS_API_KEY);
+  }
+  const queryString = params.toString();
+  const url = `${GOOGLE_BOOKS_URL}/${encodeURIComponent(volumeId)}${queryString ? `?${queryString}` : ''}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    const error = new Error(`Google Books API returned ${response.status}`);
+    error.status = response.status; // 404 = bad id, 429 = rate limited, etc.
+    throw error;
+  }
+
+  const volume = await response.json();
+  return normalizeVolume(volume);
+}

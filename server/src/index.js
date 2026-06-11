@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { query } from './db.js';
 import authRouter from './routes/auth.js';
 import booksRouter from './routes/books.js';
+import libraryRouter from './routes/library.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -43,6 +44,9 @@ app.use('/api/auth', authRouter);
 
 // Book routes: /api/books/search
 app.use('/api/books', booksRouter);
+
+// Library routes: the logged-in user's own collection (user_books)
+app.use('/api/library', libraryRouter);
 
 // --- Start the server ---
 app.listen(PORT, () => {

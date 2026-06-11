@@ -18,4 +18,30 @@ export function query(text, params) {
   return pool.query(text, params);
 }
 
+// Run several queries as ONE atomic transaction. We check out a single dedicated
+// client from the pool (a transaction must run all its statements on the same
+// connection), wrap the work in BEGIN/COMMIT, and ROLLBACK if anything throws -
+// so a multi-step write either fully happens or not at all. The `finally` always
+// returns the client to the pool, success or failure, so we never leak connections.
+//
+// Usage:
+//   await withTransaction(async (client) => {
+//     await client.query('INSERT ...');
+//     await client.query('INSERT ...');
+//   });
+export async function withTransaction(callback) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err; // let the caller decide how to respond
+  } finally {
+    client.release();
+  }
+}
+
 export default pool;
