@@ -68,7 +68,7 @@ export async function cacheBook(client, volume) {
   }
 
   // Genres: same upsert-then-link, no ordering to preserve.
-  for (const name of volume.categories) {
+  for (const name of volume.genres) {
     const genre = await client.query(
       `INSERT INTO genres (name) VALUES ($1)
        ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name

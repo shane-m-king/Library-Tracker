@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/requireAuth.js';
+import { toUser } from '../services/userProjection.js';
 
 const router = Router();
 
@@ -63,13 +64,13 @@ router.post('/register', async (req, res) => {
     const result = await query(
       `INSERT INTO users (email, password_hash, display_name)
        VALUES ($1, $2, $3)
-       RETURNING id, email, display_name, created_at`,
+       RETURNING id, email, display_name, username, library_visibility, created_at`,
       [email, passwordHash, displayName]
     );
     const user = result.rows[0];
 
     setAuthCookie(res, user);
-    return res.status(201).json({ user });
+    return res.status(201).json({ user: toUser(user) });
   } catch (err) {
     // 23505 = Postgres unique_violation. Our UNIQUE(email) constraint is the
     // single source of truth for "is this email taken?" - no race condition.
@@ -95,7 +96,8 @@ router.post('/login', async (req, res) => {
   try {
     // We need password_hash here (unlike register's RETURNING) to compare against.
     const result = await query(
-      `SELECT id, email, display_name, password_hash, created_at
+      `SELECT id, email, display_name, username, library_visibility,
+              password_hash, created_at
          FROM users
         WHERE email = $1`,
       [email]
@@ -115,9 +117,8 @@ router.post('/login', async (req, res) => {
 
     setAuthCookie(res, user);
 
-    // Strip password_hash off the object before sending it back to the client.
-    const { password_hash, ...safeUser } = user;
-    return res.status(200).json({ user: safeUser });
+    // toUser only ever picks safe fields, so password_hash never reaches the client.
+    return res.status(200).json({ user: toUser(user) });
   } catch (err) {
     console.error('Login failed:', err);
     return res.status(500).json({ error: 'something went wrong' });
@@ -130,7 +131,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, email, display_name, created_at
+      `SELECT id, email, display_name, username, library_visibility, created_at
          FROM users
         WHERE id = $1`,
       [req.userId]
@@ -141,7 +142,7 @@ router.get('/me', requireAuth, async (req, res) => {
       // Token was valid but the account is gone (e.g. it was deleted).
       return res.status(401).json({ error: 'not authenticated' });
     }
-    return res.json({ user });
+    return res.json({ user: toUser(user) });
   } catch (err) {
     console.error('Fetching current user failed:', err);
     return res.status(500).json({ error: 'something went wrong' });

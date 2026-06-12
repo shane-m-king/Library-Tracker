@@ -7,6 +7,7 @@ import authRouter from './routes/auth.js';
 import booksRouter from './routes/books.js';
 import libraryRouter from './routes/library.js';
 import loansRouter from './routes/loans.js';
+import usersRouter from './routes/users.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -51,6 +52,9 @@ app.use('/api/library', libraryRouter);
 
 // Loan routes: lending and borrowing (loans)
 app.use('/api/loans', loansRouter);
+
+// User routes: profiles, discovery, and your own account (/me)
+app.use('/api/users', usersRouter);
 
 // --- Start the server ---
 app.listen(PORT, () => {

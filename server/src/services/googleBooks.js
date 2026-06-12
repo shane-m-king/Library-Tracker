@@ -42,7 +42,9 @@ export function normalizeVolume(volume) {
     pageCount: info.pageCount ?? null,
     isbn10,
     isbn13,
-    categories: info.categories ?? [],
+    // Google calls these "categories"; we call them genres throughout our app
+    // (matching the genres table and the nested book shape in library/loans).
+    genres: info.categories ?? [],
     thumbnailUrl: cleanImageUrl(images.thumbnail),
     smallThumbnailUrl: cleanImageUrl(images.smallThumbnail),
   };
