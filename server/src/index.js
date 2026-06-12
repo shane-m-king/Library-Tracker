@@ -8,6 +8,16 @@ import booksRouter from './routes/books.js';
 import libraryRouter from './routes/library.js';
 import loansRouter from './routes/loans.js';
 import usersRouter from './routes/users.js';
+import friendsRouter from './routes/friends.js';
+
+// Fail fast on missing critical configuration. Better a clear crash at startup
+// than confusing 500s at request time (or, worse, signing JWTs no one can verify).
+for (const key of ['DATABASE_URL', 'JWT_SECRET']) {
+  if (!process.env[key]) {
+    console.error(`Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -55,6 +65,16 @@ app.use('/api/loans', loansRouter);
 
 // User routes: profiles, discovery, and your own account (/me)
 app.use('/api/users', usersRouter);
+
+// Friend routes: the friends graph (requests, accept/decline, list)
+app.use('/api/friends', friendsRouter);
+
+// Catch-all for any request that didn't match a route above. Without this,
+// Express's default handler replies with an HTML page, which breaks a client that
+// always parses JSON. Mounted LAST so it only runs when nothing else matched.
+app.use((req, res) => {
+  res.status(404).json({ error: 'not found' });
+});
 
 // --- Start the server ---
 app.listen(PORT, () => {

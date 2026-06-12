@@ -93,6 +93,18 @@ router.post('/', requireAuth, async (req, res) => {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'this book is already in your library' });
     }
+    // 23503 = foreign_key_violation: the user_id no longer exists. The token is
+    // valid but the account was deleted - treat as an expired session.
+    if (err.code === '23503') {
+      return res.status(401).json({ error: 'your account no longer exists' });
+    }
+    // A malformed acquiredDate reaches Postgres as an invalid date value (same as
+    // the PATCH path). 22007/22008 = invalid datetime format / field overflow.
+    if (err.code === '22007' || err.code === '22008') {
+      return res
+        .status(400)
+        .json({ error: 'acquiredDate must be a valid date (YYYY-MM-DD)' });
+    }
     // err.status is set by the Google Books service when the upstream call fails.
     if (err.status) {
       const message =

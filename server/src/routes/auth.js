@@ -1,18 +1,16 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { toUser } from '../services/userProjection.js';
+import { setAuthCookie, clearAuthCookie } from '../lib/authCookie.js';
+import { normalizeUsername } from '../lib/username.js';
 
 const router = Router();
 
 // bcrypt "cost factor": higher = slower to hash = harder to brute-force. 12 is a
 // sensible modern default (each step doubles the work).
 const SALT_ROUNDS = 12;
-
-// How long a login stays valid before the user must sign in again.
-const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 // A throwaway bcrypt hash computed once at startup. On login, if no user matches
 // the email, we still compare the password against THIS hash. bcrypt.compare is
@@ -21,36 +19,26 @@ const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 // use to discover which emails have accounts.
 const DUMMY_HASH = bcrypt.hashSync('no-user-will-ever-match-this', SALT_ROUNDS);
 
-// Sign a JWT identifying the user and attach it as an httpOnly cookie.
-// Used by both register and login so the rules live in one place.
-function setAuthCookie(res, user) {
-  const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, {
-    expiresIn: TOKEN_TTL_SECONDS,
-  });
-
-  res.cookie('token', token, {
-    httpOnly: true,                                 // JS can't read it -> XSS can't steal it
-    sameSite: 'lax',                                // mitigates CSRF
-    secure: process.env.NODE_ENV === 'production',  // HTTPS-only once deployed
-    maxAge: TOKEN_TTL_SECONDS * 1000,               // cookie lifetime in ms
-  });
-}
-
 // POST /api/auth/register
 // Create a new account, then log them straight in by issuing the auth cookie.
 router.post('/register', async (req, res) => {
-  const { email, password, displayName } = req.body ?? {};
+  const { email, password, displayName, username } = req.body ?? {};
 
   // --- Basic validation ---
-  if (!email || !password || !displayName) {
+  if (!email || !password || !displayName || !username) {
     return res
       .status(400)
-      .json({ error: 'email, password, and displayName are required' });
+      .json({ error: 'email, password, displayName, and username are required' });
   }
   if (password.length < 8) {
     return res
       .status(400)
       .json({ error: 'password must be at least 8 characters' });
+  }
+  // Same handle rules as PATCH /me, via the shared validator.
+  const uname = normalizeUsername(username);
+  if (!uname.ok) {
+    return res.status(400).json({ error: uname.error });
   }
 
   try {
@@ -58,23 +46,26 @@ router.post('/register', async (req, res) => {
     // output, so we never store (or even see) the plaintext.
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Parameterized query ($1, $2, $3): values are sent separately from the SQL,
-    // which makes SQL injection impossible. RETURNING hands back the new row -
-    // note we deliberately never select password_hash.
+    // Parameterized query: values are sent separately from the SQL, which makes
+    // SQL injection impossible. RETURNING hands back the new row - note we
+    // deliberately never select password_hash.
     const result = await query(
-      `INSERT INTO users (email, password_hash, display_name)
-       VALUES ($1, $2, $3)
+      `INSERT INTO users (email, password_hash, display_name, username)
+       VALUES ($1, $2, $3, $4)
        RETURNING id, email, display_name, username, library_visibility, created_at`,
-      [email, passwordHash, displayName]
+      [email, passwordHash, displayName, uname.value]
     );
     const user = result.rows[0];
 
-    setAuthCookie(res, user);
+    setAuthCookie(res, user.id);
     return res.status(201).json({ user: toUser(user) });
   } catch (err) {
-    // 23505 = Postgres unique_violation. Our UNIQUE(email) constraint is the
-    // single source of truth for "is this email taken?" - no race condition.
+    // 23505 = unique_violation. Two columns are unique here - email and username -
+    // so we disambiguate by the constraint name to return the right message.
     if (err.code === '23505') {
+      if (err.constraint === 'users_username_key') {
+        return res.status(409).json({ error: 'that username is already taken' });
+      }
       return res
         .status(409)
         .json({ error: 'an account with that email already exists' });
@@ -115,7 +106,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'invalid email or password' });
     }
 
-    setAuthCookie(res, user);
+    setAuthCookie(res, user.id);
 
     // toUser only ever picks safe fields, so password_hash never reaches the client.
     return res.status(200).json({ user: toUser(user) });
@@ -150,14 +141,9 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 // POST /api/auth/logout
-// Clears the auth cookie. The options (besides maxAge) must match how the cookie
-// was set, or the browser may not clear it. Safe to call even when logged out.
+// Clears the auth cookie. Safe to call even when logged out.
 router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
+  clearAuthCookie(res);
   return res.json({ ok: true });
 });
 

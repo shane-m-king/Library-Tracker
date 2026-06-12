@@ -3,15 +3,18 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { query } from '../db.js';
 import { toUser, toPublicUser } from '../services/userProjection.js';
 import { isValidId } from '../lib/ids.js';
+import { getLibraryItems } from '../services/libraryItems.js';
+import { areFriends } from '../services/friendships.js';
+import { clearAuthCookie } from '../lib/authCookie.js';
+import { normalizeUsername } from '../lib/username.js';
 
 const router = Router();
 
 const VALID_VISIBILITIES = ['public', 'friends', 'private'];
 
-// Handle format, enforced in the app layer (the DB only guarantees uniqueness):
-// 3-30 characters, letters/digits/underscores. No spaces or punctuation, so a
-// handle is safe to show raw and to put in a URL later.
-const USERNAME_RE = /^[A-Za-z0-9_]{3,30}$/;
+// Mirrors the library route's statuses, used to validate the ?status filter when
+// viewing another user's library.
+const VALID_LIBRARY_STATUSES = ['owned', 'wishlist'];
 
 // Fields a user may change on their OWN profile, mapped API name -> DB column.
 // Same whitelist trick as library/loans: blocks mass-assignment and keeps the
@@ -46,15 +49,11 @@ router.patch('/me', requireAuth, async (req, res) => {
     }
 
     if (field === 'username') {
-      if (typeof value !== 'string') {
-        return res.status(400).json({ error: 'username must be a string' });
+      const result = normalizeUsername(value);
+      if (!result.ok) {
+        return res.status(400).json({ error: result.error });
       }
-      value = value.trim();
-      if (!USERNAME_RE.test(value)) {
-        return res.status(400).json({
-          error: 'username must be 3-30 characters: letters, numbers, or underscores',
-        });
-      }
+      value = result.value;
     }
 
     if (field === 'libraryVisibility' && !VALID_VISIBILITIES.includes(value)) {
@@ -97,6 +96,30 @@ router.patch('/me', requireAuth, async (req, res) => {
       return res.status(409).json({ error: 'that username is already taken' });
     }
     console.error('Updating profile failed:', err);
+    return res.status(500).json({ error: 'something went wrong' });
+  }
+});
+
+// DELETE /api/users/me
+// Permanently delete your own account. The user's library entries, loans, and
+// friendships all go with it - every table that references users(id) does so with
+// ON DELETE CASCADE, so one delete cleans up the whole graph. The shared catalog
+// (books/authors/genres) is untouched. We also clear the auth cookie, since the
+// session it represents no longer points at anyone.
+router.delete('/me', requireAuth, async (req, res) => {
+  try {
+    const deleted = await query('DELETE FROM users WHERE id = $1 RETURNING id', [req.userId]);
+
+    // Either way, this session is over - drop the cookie.
+    clearAuthCookie(res);
+
+    if (deleted.rowCount === 0) {
+      // The token was valid but the account was already gone.
+      return res.status(401).json({ error: 'not authenticated' });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Deleting account failed:', err);
     return res.status(500).json({ error: 'something went wrong' });
   }
 });
@@ -167,6 +190,69 @@ router.get('/:id', requireAuth, async (req, res) => {
     return res.json({ user: toPublicUser(result.rows[0]) });
   } catch (err) {
     console.error('Fetching user profile failed:', err);
+    return res.status(500).json({ error: 'something went wrong' });
+  }
+});
+
+// GET /api/users/:id/library
+// View another user's collection, subject to their library_visibility:
+//   public  - any logged-in user
+//   friends - only an accepted friend of the owner
+//   private - only the owner
+// You can always view your OWN library here regardless of the setting. When
+// allowed, this reuses the exact same getLibraryItems query that powers
+// GET /api/library, so a friend sees the identical item shape the owner does.
+router.get('/:id/library', requireAuth, async (req, res) => {
+  if (!isValidId(req.params.id)) {
+    return res.status(404).json({ error: 'user not found' });
+  }
+
+  // Same optional status filter as the owner's own library listing.
+  const { status } = req.query;
+  if (status != null && !VALID_LIBRARY_STATUSES.includes(status)) {
+    return res
+      .status(400)
+      .json({ error: "status filter must be 'owned' or 'wishlist'" });
+  }
+
+  try {
+    const owner = await query(
+      'SELECT library_visibility FROM users WHERE id = $1',
+      [req.params.id]
+    );
+    if (owner.rowCount === 0) {
+      return res.status(404).json({ error: 'user not found' });
+    }
+    const visibility = owner.rows[0].library_visibility;
+
+    // The gate. You can always see your own; otherwise it's the owner's setting.
+    const isOwner = String(req.params.id) === String(req.userId);
+    let allowed = isOwner;
+    if (!allowed) {
+      if (visibility === 'public') allowed = true;
+      else if (visibility === 'friends') {
+        allowed = await areFriends(req.userId, req.params.id);
+      }
+      // 'private' stays false for non-owners.
+    }
+
+    if (!allowed) {
+      // The profile itself is already public (GET /:id), so naming the visibility
+      // level leaks nothing new - and it lets the client say "add as a friend to
+      // see this" vs "this is private".
+      return res.status(403).json({
+        error:
+          visibility === 'friends'
+            ? "this user's library is visible to friends only"
+            : "this user's library is private",
+        visibility,
+      });
+    }
+
+    const items = await getLibraryItems({ userId: req.params.id, status: status ?? null });
+    return res.json({ items });
+  } catch (err) {
+    console.error('Fetching user library failed:', err);
     return res.status(500).json({ error: 'something went wrong' });
   }
 });

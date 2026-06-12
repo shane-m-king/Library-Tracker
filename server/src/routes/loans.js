@@ -138,6 +138,11 @@ router.post('/', requireAuth, async (req, res) => {
         .status(400)
         .json({ error: 'loanedOn and dueDate must be valid dates (YYYY-MM-DD)' });
     }
+    // 23503 = foreign_key_violation: the user_id no longer exists (account deleted
+    // while holding a valid token). Treat as an expired session.
+    if (err.code === '23503') {
+      return res.status(401).json({ error: 'your account no longer exists' });
+    }
     // err.status is set by the Google Books service when caching a borrowed book.
     if (err.status) {
       const message =
