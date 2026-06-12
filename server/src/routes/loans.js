@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { query, withTransaction } from '../db.js';
 import { resolveBook, cacheBook } from '../services/bookCache.js';
 import { getLoanItems, getLoanItem } from '../services/loanItems.js';
+import { isValidId } from '../lib/ids.js';
 
 const router = Router();
 
@@ -186,7 +187,7 @@ router.get('/', requireAuth, async (req, res) => {
 // semantics as the library PATCH. Marking a lent-out loan returned frees a copy,
 // which is always safe, so there's no invariant guard here.
 router.patch('/:id', requireAuth, async (req, res) => {
-  if (!/^\d+$/.test(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(404).json({ error: 'loan not found' });
   }
 
@@ -252,7 +253,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 // Remove a loan record. loans is a leaf table (nothing references it), so this is
 // a plain scoped delete - no cascade needed.
 router.delete('/:id', requireAuth, async (req, res) => {
-  if (!/^\d+$/.test(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(404).json({ error: 'loan not found' });
   }
 

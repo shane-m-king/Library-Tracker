@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { query, withTransaction } from '../db.js';
 import { resolveBook, cacheBook } from '../services/bookCache.js';
 import { getLibraryItems, getLibraryItem } from '../services/libraryItems.js';
+import { isValidId } from '../lib/ids.js';
 
 const router = Router();
 
@@ -135,7 +136,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.patch('/:id', requireAuth, async (req, res) => {
   // The id addresses a row by its surrogate key, which is a BIGINT. Reject a
   // non-numeric id up front so it can't reach Postgres and blow up as a type error.
-  if (!/^\d+$/.test(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(404).json({ error: 'library entry not found' });
   }
 
@@ -287,7 +288,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 // them, so the DB won't cascade this for us - we do both writes inside ONE
 // transaction so they succeed or fail together.
 router.delete('/:id', requireAuth, async (req, res) => {
-  if (!/^\d+$/.test(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(404).json({ error: 'library entry not found' });
   }
 

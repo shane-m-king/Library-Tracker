@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { query } from '../db.js';
 import { toUser, toPublicUser } from '../services/userProjection.js';
+import { isValidId } from '../lib/ids.js';
 
 const router = Router();
 
@@ -100,6 +101,44 @@ router.patch('/me', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/users?q=...
+// Search for users by handle or display name - how you find people to add as
+// friends. Case-insensitive "contains" match on either field, returning public
+// profiles only. Yourself is excluded (you don't need to find you).
+router.get('/', requireAuth, async (req, res) => {
+  const q = (req.query.q ?? '').trim();
+
+  // Require a couple of characters: a 1-character (or empty) query would match
+  // almost everyone and isn't a meaningful lookup.
+  if (q.length < 2) {
+    return res
+      .status(400)
+      .json({ error: 'search query (?q=) must be at least 2 characters' });
+  }
+
+  // Escape LIKE wildcards in the user's input so % and _ match literally instead
+  // of acting as pattern metacharacters (backslash is Postgres's default LIKE
+  // escape). Then wrap in %...% for a "contains" match. ILIKE is case-insensitive;
+  // username is CITEXT (already case-insensitive) but ILIKE on it is harmless.
+  const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
+
+  try {
+    const result = await query(
+      `SELECT id, display_name, username
+         FROM users
+        WHERE id <> $2
+          AND (username ILIKE $1 OR display_name ILIKE $1)
+        ORDER BY username ASC NULLS LAST, id ASC
+        LIMIT 20`,
+      [pattern, req.userId]
+    );
+    return res.json({ results: result.rows.map(toPublicUser) });
+  } catch (err) {
+    console.error('User search failed:', err);
+    return res.status(500).json({ error: 'something went wrong' });
+  }
+});
+
 // GET /api/users/:id
 // A user's PUBLIC profile - what any logged-in user may see about another. Goes
 // through toPublicUser, so the response is only id/displayName/username - never
@@ -112,7 +151,7 @@ router.get('/:id', requireAuth, async (req, res) => {
   // :id addresses a BIGINT key; reject non-numeric ids up front so they can't
   // reach Postgres as a type error. A missing user and a malformed id both read
   // as "not found" - we don't distinguish, and we never leak who exists via shape.
-  if (!/^\d+$/.test(req.params.id)) {
+  if (!isValidId(req.params.id)) {
     return res.status(404).json({ error: 'user not found' });
   }
 
