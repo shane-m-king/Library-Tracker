@@ -50,6 +50,14 @@ router.post('/', requireAuth, async (req, res) => {
   if (quantity != null && (!Number.isInteger(quantity) || quantity < 1)) {
     return res.status(400).json({ error: 'quantity must be an integer >= 1' });
   }
+  // notes and acquiredPlace are free text; when provided they must be strings.
+  // (!= null lets them be omitted or explicitly null; this mirrors the PATCH rules.)
+  if (notes != null && typeof notes !== 'string') {
+    return res.status(400).json({ error: 'notes must be a string' });
+  }
+  if (acquiredPlace != null && typeof acquiredPlace !== 'string') {
+    return res.status(400).json({ error: 'acquiredPlace must be a string' });
+  }
 
   try {
     // Figure out the catalog book (fetching from Google only if it's new) BEFORE

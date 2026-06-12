@@ -44,6 +44,10 @@ router.post('/', requireAuth, async (req, res) => {
   if (typeof counterpartyName !== 'string' || counterpartyName.trim() === '') {
     return res.status(400).json({ error: 'counterpartyName is required' });
   }
+  // notes is free text; when provided it must be a string (mirrors the PATCH rule).
+  if (notes != null && typeof notes !== 'string') {
+    return res.status(400).json({ error: 'notes must be a string' });
+  }
 
   try {
     if (direction === 'borrowed') {
