@@ -11,6 +11,14 @@
 // projections explicit means a column added to `users` later (say, a private
 // phone number) is NOT leaked to other users by default - we'd have to opt it in.
 
+// The exact column list toUser reads, as a SQL select fragment. Kept right next to
+// toUser so the projection and the queries that feed it can't drift apart - every
+// endpoint that builds a toUser response selects (or RETURNs) these same columns.
+// Login additionally needs password_hash to compare against; it appends that
+// itself, since the hash is never part of toUser's output.
+export const USER_COLUMNS =
+  'id, email, display_name, username, library_visibility, created_at';
+
 export function toUser(row) {
   return {
     id: row.id,

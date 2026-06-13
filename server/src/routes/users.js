@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { query } from '../db.js';
-import { toUser, toPublicUser } from '../services/userProjection.js';
+import { toUser, toPublicUser, USER_COLUMNS } from '../services/userProjection.js';
 import { isValidId } from '../lib/ids.js';
-import { getLibraryItems } from '../services/libraryItems.js';
+import { getLibraryItems, LIBRARY_STATUSES } from '../services/libraryItems.js';
 import { areFriends } from '../services/friendships.js';
 import { clearAuthCookie } from '../lib/authCookie.js';
 import { normalizeUsername } from '../lib/username.js';
@@ -11,10 +11,6 @@ import { normalizeUsername } from '../lib/username.js';
 const router = Router();
 
 const VALID_VISIBILITIES = ['public', 'friends', 'private'];
-
-// Mirrors the library route's statuses, used to validate the ?status filter when
-// viewing another user's library.
-const VALID_LIBRARY_STATUSES = ['owned', 'wishlist'];
 
 // Fields a user may change on their OWN profile, mapped API name -> DB column.
 // Same whitelist trick as library/loans: blocks mass-assignment and keeps the
@@ -80,7 +76,7 @@ router.patch('/me', requireAuth, async (req, res) => {
       `UPDATE users
           SET ${sets.join(', ')}
         WHERE id = ${userPlaceholder}
-        RETURNING id, email, display_name, username, library_visibility, created_at`,
+        RETURNING ${USER_COLUMNS}`,
       values
     );
 
@@ -151,7 +147,7 @@ router.get('/', requireAuth, async (req, res) => {
          FROM users
         WHERE id <> $2
           AND (username ILIKE $1 OR display_name ILIKE $1)
-        ORDER BY username ASC NULLS LAST, id ASC
+        ORDER BY username ASC, id ASC
         LIMIT 20`,
       [pattern, req.userId]
     );
@@ -209,7 +205,7 @@ router.get('/:id/library', requireAuth, async (req, res) => {
 
   // Same optional status filter as the owner's own library listing.
   const { status } = req.query;
-  if (status != null && !VALID_LIBRARY_STATUSES.includes(status)) {
+  if (status != null && !LIBRARY_STATUSES.includes(status)) {
     return res
       .status(400)
       .json({ error: "status filter must be 'owned' or 'wishlist'" });

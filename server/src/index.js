@@ -12,7 +12,11 @@ import friendsRouter from './routes/friends.js';
 
 // Fail fast on missing critical configuration. Better a clear crash at startup
 // than confusing 500s at request time (or, worse, signing JWTs no one can verify).
-for (const key of ['DATABASE_URL', 'JWT_SECRET']) {
+// CLIENT_ORIGIN matters just as much: without it, the cors() middleware below
+// falls back to allowing '*', which a browser REJECTS alongside credentials:true -
+// so cookie auth would silently break with a baffling CORS error instead of a
+// clear crash here.
+for (const key of ['DATABASE_URL', 'JWT_SECRET', 'CLIENT_ORIGIN']) {
   if (!process.env[key]) {
     console.error(`Missing required environment variable: ${key}`);
     process.exit(1);

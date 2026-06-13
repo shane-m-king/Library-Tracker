@@ -11,6 +11,12 @@ const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 // Options shared by setting and clearing. httpOnly keeps JS/XSS from reading the
 // token; sameSite mitigates CSRF; secure (HTTPS-only) switches on in production.
+//
+// NOTE for deployment: 'lax' works in local dev because the client (:5173) and
+// API (:4000) are the SAME site - sameSite counts the registrable domain
+// (localhost), not the port. If you ever host the API and client on DIFFERENT
+// domains, the browser won't send this cookie cross-site; you'd need
+// sameSite: 'none' WITH secure: true (which 'none' requires) to allow it.
 function baseCookieOptions() {
   return {
     httpOnly: true,

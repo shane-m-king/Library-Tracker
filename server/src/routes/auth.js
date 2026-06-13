@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/requireAuth.js';
-import { toUser } from '../services/userProjection.js';
+import { toUser, USER_COLUMNS } from '../services/userProjection.js';
 import { setAuthCookie, clearAuthCookie } from '../lib/authCookie.js';
 import { normalizeUsername } from '../lib/username.js';
 
@@ -52,7 +52,7 @@ router.post('/register', async (req, res) => {
     const result = await query(
       `INSERT INTO users (email, password_hash, display_name, username)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, email, display_name, username, library_visibility, created_at`,
+       RETURNING ${USER_COLUMNS}`,
       [email, passwordHash, displayName, uname.value]
     );
     const user = result.rows[0];
@@ -87,8 +87,7 @@ router.post('/login', async (req, res) => {
   try {
     // We need password_hash here (unlike register's RETURNING) to compare against.
     const result = await query(
-      `SELECT id, email, display_name, username, library_visibility,
-              password_hash, created_at
+      `SELECT ${USER_COLUMNS}, password_hash
          FROM users
         WHERE email = $1`,
       [email]
@@ -122,7 +121,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, email, display_name, username, library_visibility, created_at
+      `SELECT ${USER_COLUMNS}
          FROM users
         WHERE id = $1`,
       [req.userId]

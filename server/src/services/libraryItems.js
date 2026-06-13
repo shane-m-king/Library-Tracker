@@ -10,6 +10,12 @@
 
 import pool from '../db.js';
 
+// The valid library statuses, in one place. Shared by the library routes (POST/GET
+// /api/library) and the social library-view route (GET /api/users/:id/library) so
+// the allowed values can't drift between them. Mirrors the DB CHECK constraint on
+// user_books.status.
+export const LIBRARY_STATUSES = ['owned', 'wishlist'];
+
 // Shape one joined DB row into the API's response contract: the personal fields
 // at the top level, with the shared catalog data nested under `book`. Keeping
 // this explicit means our column names aren't leaked straight to clients - the

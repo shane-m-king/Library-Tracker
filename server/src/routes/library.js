@@ -2,12 +2,10 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { query, withTransaction } from '../db.js';
 import { resolveBook, cacheBook } from '../services/bookCache.js';
-import { getLibraryItems, getLibraryItem } from '../services/libraryItems.js';
+import { getLibraryItems, getLibraryItem, LIBRARY_STATUSES } from '../services/libraryItems.js';
 import { isValidId } from '../lib/ids.js';
 
 const router = Router();
-
-const VALID_STATUSES = ['owned', 'wishlist'];
 
 // The only fields a PATCH may change, mapped from their API name to their DB
 // column. Anything else in the request body is ignored. Whitelisting like this
@@ -40,7 +38,7 @@ router.post('/', requireAuth, async (req, res) => {
   if (!googleVolumeId) {
     return res.status(400).json({ error: 'googleVolumeId is required' });
   }
-  if (!VALID_STATUSES.includes(status)) {
+  if (!LIBRARY_STATUSES.includes(status)) {
     return res.status(400).json({ error: "status must be 'owned' or 'wishlist'" });
   }
   if (rating != null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
@@ -125,7 +123,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.get('/', requireAuth, async (req, res) => {
   const { status } = req.query;
 
-  if (status != null && !VALID_STATUSES.includes(status)) {
+  if (status != null && !LIBRARY_STATUSES.includes(status)) {
     return res
       .status(400)
       .json({ error: "status filter must be 'owned' or 'wishlist'" });
@@ -145,6 +143,11 @@ router.get('/', requireAuth, async (req, res) => {
 // actually sends are touched. We deliberately distinguish "key omitted" (leave it
 // as-is) from "key sent as null" (explicitly clear it) - that's the core
 // difference between a PATCH and a full-replacement PUT.
+//
+// One field carries a side effect: changing status to 'wishlist' ends ownership,
+// so it also clears the book's lent-out loans (see below). That's destructive, so
+// the frontend is expected to warn before sending it; the response reports
+// `loansRemoved` so the UI can confirm what happened.
 router.patch('/:id', requireAuth, async (req, res) => {
   // The id addresses a row by its surrogate key, which is a BIGINT. Reject a
   // non-numeric id up front so it can't reach Postgres and blow up as a type error.
@@ -162,7 +165,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const value = body[field];
 
     // Per-field validation.
-    if (field === 'status' && !VALID_STATUSES.includes(value)) {
+    if (field === 'status' && !LIBRARY_STATUSES.includes(value)) {
       return res.status(400).json({ error: "status must be 'owned' or 'wishlist'" });
     }
     if (
@@ -212,21 +215,30 @@ router.patch('/:id', requireAuth, async (req, res) => {
         WHERE id = ${idPlaceholder} AND user_id = ${userPlaceholder}
         RETURNING id`;
 
-  // Changing quantity touches the lending invariant (active lent-out copies must
-  // not exceed quantity owned), so that path needs an atomic, locked guard. Every
-  // other edit is a plain field update with no invariant, so it skips the
+  // Two kinds of edit need an atomic, locked transaction:
+  //   - quantity changes:       touches the lending invariant (active lent-out
+  //                             copies must not exceed quantity owned).
+  //   - status -> 'wishlist':   ENDS ownership of the book, so its lent-out loans
+  //                             (which only exist because you own a copy) must be
+  //                             cleared too - exactly like DELETE does. Borrowed
+  //                             loans don't depend on ownership and are left alone.
+  // Any other edit is a plain field update with no invariant, so it skips the
   // transaction entirely - a single UPDATE plus a read-after-write.
   const quantityChanging = Object.prototype.hasOwnProperty.call(body, 'quantity');
+  const becomingWishlist =
+    Object.prototype.hasOwnProperty.call(body, 'status') && body.status === 'wishlist';
+  const needsTransaction = quantityChanging || becomingWishlist;
 
   try {
     let outcome;
 
-    if (quantityChanging) {
+    if (needsTransaction) {
       outcome = await withTransaction(async (client) => {
         // Lock THIS user_books row for the duration of the transaction. This
         // serializes against a concurrent loan-creation (which locks the same
-        // row), so the count-then-update below can't race: we won't approve a
-        // quantity that another in-flight request is about to invalidate.
+        // row), so the work below can't race: no new lent-out loan can slip onto
+        // the book while we're flipping it to wishlist, and no quantity we approve
+        // can be invalidated by an in-flight request.
         const locked = await client.query(
           `SELECT book_id FROM user_books
             WHERE id = $1 AND user_id = $2
@@ -234,19 +246,33 @@ router.patch('/:id', requireAuth, async (req, res) => {
           [req.params.id, req.userId]
         );
         if (locked.rowCount === 0) return { notFound: true };
+        const bookId = locked.rows[0].book_id;
 
-        // How many copies are out on active (not-yet-returned) lent-out loans?
-        const lent = await client.query(
-          `SELECT count(*)::int AS n FROM loans
-            WHERE user_id = $1 AND book_id = $2
-              AND direction = 'lent_out' AND returned_on IS NULL`,
-          [req.userId, locked.rows[0].book_id]
-        );
-        const lentOut = lent.rows[0].n;
+        let loansRemoved = 0;
+        if (becomingWishlist) {
+          // Ownership is ending -> drop this user's lent-out loans for the book
+          // (borrowed loans stay). After this, lentOut is effectively 0, so the
+          // quantity guard below is moot and deliberately skipped.
+          const cleared = await client.query(
+            `DELETE FROM loans
+              WHERE user_id = $1 AND book_id = $2 AND direction = 'lent_out'`,
+            [req.userId, bookId]
+          );
+          loansRemoved = cleared.rowCount;
+        } else if (quantityChanging) {
+          // How many copies are out on active (not-yet-returned) lent-out loans?
+          const lent = await client.query(
+            `SELECT count(*)::int AS n FROM loans
+              WHERE user_id = $1 AND book_id = $2
+                AND direction = 'lent_out' AND returned_on IS NULL`,
+            [req.userId, bookId]
+          );
+          const lentOut = lent.rows[0].n;
 
-        // You can't own fewer copies than you currently have lent out.
-        if (body.quantity < lentOut) {
-          return { conflict: lentOut };
+          // You can't own fewer copies than you currently have lent out.
+          if (body.quantity < lentOut) {
+            return { conflict: lentOut };
+          }
         }
 
         const result = await client.query(updateSql, values);
@@ -255,7 +281,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         // Re-read through the shared query so PATCH returns the same joined,
         // book-nested shape as GET. The transaction client sees our own UPDATE.
         const item = await getLibraryItem({ userId: req.userId, id: req.params.id }, client);
-        return { item };
+        return { item, loansRemoved };
       });
     } else {
       // No invariant in play -> no transaction. Update, then read the row back to
@@ -266,7 +292,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         outcome = { notFound: true };
       } else {
         const item = await getLibraryItem({ userId: req.userId, id: req.params.id });
-        outcome = { item };
+        outcome = { item, loansRemoved: 0 };
       }
     }
 
@@ -278,7 +304,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
         error: `quantity can't be lower than the ${outcome.conflict} copy/copies currently lent out`,
       });
     }
-    return res.json({ item: outcome.item });
+    // loansRemoved mirrors DELETE's envelope: it's how many lent-out loans the
+    // status->wishlist change cleared (0 for every other edit).
+    return res.json({ item: outcome.item, loansRemoved: outcome.loansRemoved });
   } catch (err) {
     // A malformed acquiredDate reaches Postgres as an invalid date value.
     if (err.code === '22007' || err.code === '22008') {
