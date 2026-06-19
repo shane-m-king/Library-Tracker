@@ -17,19 +17,32 @@ export class ApiError extends Error {
   }
 }
 
+// Pull a user-facing message out of a caught error. An ApiError already carries the
+// server's own wording (or our network fallback), so we use it directly; anything
+// else (an unexpected runtime error) gets the generic fallback. Saves every caller
+// from re-writing the same `instanceof ApiError` check.
+export function getErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 // Make a request to `path`, which is relative to /api (e.g. '/auth/me' hits
 // /api/auth/me, which the Vite dev proxy forwards to the Express server). Options:
 //   method - 'GET' (default), 'POST', 'PATCH', 'DELETE'
 //   body   - a plain object; it's JSON-encoded and the Content-Type header is set
 //            for you. Omit it for GETs or bodyless writes.
+//   signal - an optional AbortSignal. Pass one to cancel the request in flight
+//            (e.g. a superseded search keystroke); aborting rejects with an
+//            AbortError, which we deliberately let through unchanged (see below).
 // Resolves to the parsed JSON body on success; throws ApiError on any non-2xx.
-export async function apiFetch(path, { method = 'GET', body } = {}) {
+export async function apiFetch(path, { method = 'GET', body, signal } = {}) {
   const options = {
     method,
     // Send (and accept) our httpOnly auth cookie. fetch omits cookies by default,
     // so without this every protected route would behave as if we're logged out.
     credentials: 'include',
     headers: {},
+    // Undefined is fine - fetch simply ignores a missing signal.
+    signal,
   };
 
   if (body !== undefined) {
@@ -40,9 +53,13 @@ export async function apiFetch(path, { method = 'GET', body } = {}) {
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, options);
-  } catch {
-    // fetch only rejects on a network-level failure (server down, DNS, refused
-    // connection) - never on an HTTP error status. Surface it as a clear,
+  } catch (err) {
+    // An aborted request rejects with an AbortError. That's not a failure - it's us
+    // cancelling on purpose - so rethrow it untouched, letting the caller recognise
+    // and ignore it instead of showing a bogus "server's down" message.
+    if (err.name === 'AbortError') throw err;
+    // Otherwise fetch only rejects on a network-level failure (server down, DNS,
+    // refused connection) - never on an HTTP error status. Surface it as a clear,
     // catchable error rather than letting a raw TypeError bubble up.
     throw new ApiError('Could not reach the server. Is it running?', 0);
   }

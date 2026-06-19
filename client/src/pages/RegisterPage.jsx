@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
-import { ApiError } from '../api/apiFetch.js';
+import { getErrorMessage } from '../api/apiFetch.js';
 import styles from './AuthForm.module.css';
 
 export default function RegisterPage() {
@@ -40,9 +40,7 @@ export default function RegisterPage() {
       await register(form);
       // Success: `user` is set -> the guard above redirects on re-render.
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Something went wrong. Please try again.'
-      );
+      setError(getErrorMessage(err));
       setSubmitting(false);
     }
   }

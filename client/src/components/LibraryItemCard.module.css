@@ -1,0 +1,131 @@
+/* Scoped to LibraryItemCard. A horizontal card: cover on the left, details on the
+   right. Rendered as an <li> because cards live in a <ul> list in LibraryPage. */
+
+.card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* A consistent cover footprint so cards line up even though Google's thumbnails
+   vary in size. object-fit keeps the image's aspect ratio inside the box. */
+.cover,
+.coverFallback {
+  flex-shrink: 0;
+  width: 64px;
+  height: 96px;
+  border-radius: 4px;
+}
+
+.cover {
+  object-fit: cover;
+  background: var(--color-bg);
+}
+
+/* Placeholder shown when a book has no thumbnail. */
+.coverFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.body {
+  min-width: 0; /* lets long titles wrap/ellipsis instead of overflowing the card */
+}
+
+.title {
+  font-size: 18px;
+  margin: 0 0 2px;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+.authors {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Status pill. Base shape here; the two variants below set the colours. */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeOwned {
+  background: #e7f0ff;
+  color: #1d4ed8;
+}
+
+.badgeWishlist {
+  background: #f1edff;
+  color: #6d28d9;
+}
+
+.rating {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quantity {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Owner-only actions, shown when onEdit/onDelete are passed. */
+.cardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.editButton,
+.removeButton {
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editButton {
+  color: var(--color-text);
+}
+
+.editButton:hover {
+  border-color: var(--color-accent);
+}
+
+.removeButton {
+  color: var(--color-danger);
+}
+
+.removeButton:hover {
+  border-color: var(--color-danger);
+}

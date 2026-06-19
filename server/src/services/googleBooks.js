@@ -40,6 +40,10 @@ export function normalizeVolume(volume) {
     publishedDate: info.publishedDate ?? null,
     description: info.description ?? null,
     pageCount: info.pageCount ?? null,
+    // Popularity signals, used by rankResults to break ties toward the edition most
+    // people mean. Sparsely populated by Google, hence weighted lightly there.
+    averageRating: info.averageRating ?? null,
+    ratingsCount: info.ratingsCount ?? null,
     isbn10,
     isbn13,
     // Google calls these "categories"; we call them genres throughout our app
@@ -50,7 +54,90 @@ export function normalizeVolume(volume) {
   };
 }
 
-// Search Google Books and return an array of normalized books.
+// Lower-case, collapse runs of whitespace, and trim - so text comparisons below are
+// case- and spacing-insensitive ("The   Hobbit" matches "the hobbit").
+function normalizeText(value) {
+  return (value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// Score one normalized book against the user's (already normalized) query and its
+// word tokens. Higher is more relevant. The guiding philosophy is "the right book
+// leads": text relevance dominates, popularity is a strong tiebreaker AMONG relevant
+// results, and quality is a light nudge. Tuned against real Google data for tricky
+// series queries (e.g. "harry potter") - see googleBooks.test.js.
+//
+// Exported so the weighting can be unit-tested directly, without the live API.
+export function scoreBook(query, queryTokens, book) {
+  const title = normalizeText(book.title);
+
+  // --- Text relevance: does this book match what they typed? ---
+  let textScore = 0;
+
+  // Title match - the dominant signal; only the strongest tier applies. The gap
+  // between exact (80) and prefix (70) is deliberately SMALL: for a series/partial
+  // query like "harry potter", a real entry ("Harry Potter and the...") is a prefix
+  // match and should sit right alongside a bare exact-title stub, not far behind it.
+  // We keep a slight exact edge so true single-title searches ("Dune" over "Dune
+  // Messiah") still resolve correctly.
+  if (title && title === query) textScore += 80; // exact title
+  else if (query && title.startsWith(query)) textScore += 70; // "harry potter and the..."
+  else if (query && title.includes(query)) textScore += 40; // appears somewhere in title
+
+  // Word coverage: reward titles containing the query's words even out of order.
+  if (queryTokens.length > 0) {
+    const matched = queryTokens.filter((t) => title.includes(t)).length;
+    textScore += 20 * (matched / queryTokens.length);
+  }
+
+  // Author match - handles searching by author rather than title.
+  const authors = normalizeText((book.authors ?? []).join(' '));
+  if (query && authors.includes(query)) textScore += 20;
+  else if (queryTokens.length > 0) {
+    const matched = queryTokens.filter((t) => authors.includes(t)).length;
+    textScore += 10 * (matched / queryTokens.length);
+  }
+
+  // Subtitle is a weak signal.
+  if (query && normalizeText(book.subtitle).includes(query)) textScore += 5;
+
+  // --- Quality: a real published edition (cover, ISBN-13, real page count) over a
+  // bare stub. Noisy - some legitimate editions lack these - so weighted lightly. ---
+  let quality = 0;
+  if (book.thumbnailUrl) quality += 4;
+  if (book.isbn13) quality += 3;
+  if (book.pageCount && book.pageCount >= 50) quality += 2;
+
+  // --- Popularity: a strong tiebreaker among RELEVANT results, GATED on a text match
+  // so a popular but unrelated book can never float up. Log-scaled because the jump
+  // from 8 to 308 ratings is meaningful while 5,000 vs 50,000 barely is; capped so one
+  // runaway count can't bury an otherwise-better match. ratingsCount is sparse, so in
+  // practice this mainly elevates the few flagship editions that actually have ratings
+  // - which is exactly the book the user usually wants. ---
+  let popularity = 0;
+  if (textScore > 0) {
+    if (book.ratingsCount > 0) {
+      popularity += Math.min(20 * Math.log10(book.ratingsCount + 1), 50);
+    }
+    if (book.averageRating) popularity += book.averageRating; // up to +5
+  }
+
+  return textScore + quality + popularity;
+}
+
+// Re-rank normalized search results best-match-first for the user's query. Pure: it
+// returns a new sorted array and never mutates its input. Ties fall back to the
+// original (Google) order via the index, so equal scores stay stable.
+export function rankResults(query, books) {
+  const q = normalizeText(query);
+  const qTokens = q.split(' ').filter(Boolean);
+
+  return books
+    .map((book, index) => ({ book, index, score: scoreBook(q, qTokens, book) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map((entry) => entry.book);
+}
+
+// Search Google Books and return an array of normalized books, best match first.
 export async function searchBooks(queryText) {
   const params = new URLSearchParams({
     q: queryText,
@@ -72,7 +159,10 @@ export async function searchBooks(queryText) {
 
   const data = await response.json();
   const items = data.items ?? []; // no matches -> items is absent
-  return items.map(normalizeVolume);
+  const books = items.map(normalizeVolume);
+  // Re-rank so the book the user most likely wants is first, rather than trusting
+  // Google's default order (which often surfaces guides/reprints above the real one).
+  return rankResults(queryText, books);
 }
 
 // Fetch ONE specific volume by its Google id and return it normalized. Used when

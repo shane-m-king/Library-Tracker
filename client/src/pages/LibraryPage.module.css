@@ -1,0 +1,192 @@
+/* Scoped to LibraryPage. The page shell, the filter tabs, the shared
+   loading/empty/error message style, and the responsive card grid. Individual
+   cards style themselves in LibraryItemCard.module.css. */
+
+.page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 32px;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.addButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background: var(--color-accent-hover);
+}
+
+/* A button that looks like an inline text link - used in the empty state to open the
+   add modal without faking a link with an <a>. */
+.linkButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.backLink {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Transient confirmation banner (e.g. "Removed X. 1 loan removed."). */
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 14px;
+}
+
+.noticeDismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+/* Remove-confirmation body inside the Modal. */
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cancel {
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel:disabled,
+.confirmRemove:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.confirmRemove {
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  background: var(--color-danger);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filterButton {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filterButton:hover {
+  border-color: var(--color-accent);
+}
+
+.filterButtonActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* Shared style for the loading / empty / error messages: muted, centred, with
+   breathing room so the page never looks broken in a non-list state. */
+.state {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 48px 0;
+}
+
+.error {
+  color: var(--color-danger);
+  margin: 0 0 16px;
+}
+
+.retry {
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Responsive grid: as many ~280px columns as fit, then wrap. auto-fill keeps the
+   card width steady and just changes how many sit per row. The list-style reset
+   removes the <ul>/<li> bullets since these are cards, not a bulleted list. */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}

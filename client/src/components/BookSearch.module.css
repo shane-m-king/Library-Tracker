@@ -1,0 +1,151 @@
+/* Scoped to BookSearch: the search form, the search-level message states, and the
+   list of result rows (each with its own add controls). Designed to sit inside the
+   Modal body, so there's no page-level shell here. */
+
+.searchForm {
+  margin-bottom: 20px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 15px;
+}
+
+.state {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 32px 0;
+}
+
+.error {
+  color: var(--color-danger);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* Result list. */
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.cover,
+.coverFallback {
+  flex-shrink: 0;
+  width: 48px;
+  height: 72px;
+  border-radius: 4px;
+}
+
+.cover {
+  object-fit: cover;
+  background: var(--color-surface);
+}
+
+.coverFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* The middle column flexes to fill the space between cover and actions. min-width:0
+   lets long titles wrap instead of pushing the actions off the card. */
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookTitle {
+  font-size: 16px;
+  margin: 0 0 2px;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+.authors {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Add controls stack on the right and stay aligned to the top of the row. */
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.addButton {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.addButtonSecondary {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.addButtonSecondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.added {
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.addError {
+  color: var(--color-danger);
+  font-size: 12px;
+  text-align: right;
+}

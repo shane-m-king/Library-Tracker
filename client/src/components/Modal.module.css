@@ -1,0 +1,65 @@
+/* Scoped to Modal. The full-viewport backdrop centres the dialog; the dialog is a
+   scrollable surface capped to the viewport so long content (a list of search
+   results) scrolls inside it rather than pushing it off-screen. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.dialog {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 640px;
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Heading row stays pinned while the body scrolls under it. */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  font-size: 20px;
+  margin: 0;
+}
+
+.close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius);
+  font-size: 24px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* The scrollable region. */
+.body {
+  padding: 24px;
+  overflow-y: auto;
+}

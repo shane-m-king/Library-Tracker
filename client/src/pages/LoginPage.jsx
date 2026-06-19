@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
-import { ApiError } from '../api/apiFetch.js';
+import { getErrorMessage } from '../api/apiFetch.js';
 import styles from './AuthForm.module.css';
 
 export default function LoginPage() {
@@ -34,9 +34,7 @@ export default function LoginPage() {
       // Success: `user` is now set, so the guard above redirects on the re-render.
       // We deliberately don't reset `submitting` - the component is on its way out.
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Something went wrong. Please try again.'
-      );
+      setError(getErrorMessage(err));
       setSubmitting(false);
     }
   }
