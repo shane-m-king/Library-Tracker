@@ -35,11 +35,25 @@ router.post('/register', async (req, res) => {
       .status(400)
       .json({ error: 'password must be at least 8 characters' });
   }
+  // displayName must be a real non-blank string (the truthy check above still lets
+  // whitespace-only through). Mirrors PATCH /me, which trims and rejects blanks -
+  // so the two write paths can't disagree on what a valid name is.
+  if (typeof displayName !== 'string' || displayName.trim() === '') {
+    return res.status(400).json({ error: 'displayName must be a non-empty string' });
+  }
+  if (typeof email !== 'string') {
+    return res.status(400).json({ error: 'email must be a string' });
+  }
   // Same handle rules as PATCH /me, via the shared validator.
   const uname = normalizeUsername(username);
   if (!uname.ok) {
     return res.status(400).json({ error: uname.error });
   }
+
+  // Store trimmed values so stray surrounding whitespace can't sneak into the
+  // account (and so " a@b.com " and "a@b.com" can't become two different logins).
+  const cleanEmail = email.trim();
+  const cleanDisplayName = displayName.trim();
 
   try {
     // Hash the password. bcrypt generates a random salt and embeds it in the
@@ -53,7 +67,7 @@ router.post('/register', async (req, res) => {
       `INSERT INTO users (email, password_hash, display_name, username)
        VALUES ($1, $2, $3, $4)
        RETURNING ${USER_COLUMNS}`,
-      [email, passwordHash, displayName, uname.value]
+      [cleanEmail, passwordHash, cleanDisplayName, uname.value]
     );
     const user = result.rows[0];
 

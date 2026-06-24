@@ -136,13 +136,17 @@ export default function BookSearch({ onAdded }) {
           {results.map((book) => {
             const add = addState[book.googleVolumeId];
             const authors = book.authors.length ? book.authors.join(', ') : 'Unknown author';
+            // Search results can lack a title (Google returns sparse volumes), so
+            // fall back once and reuse it for both the heading and the cover's alt -
+            // otherwise the alt would read "Cover of null".
+            const title = book.title ?? 'Untitled';
             return (
               <li key={book.googleVolumeId} className={styles.result}>
                 {book.thumbnailUrl ? (
                   <img
                     className={styles.cover}
                     src={book.thumbnailUrl}
-                    alt={`Cover of ${book.title}`}
+                    alt={`Cover of ${title}`}
                     loading="lazy"
                   />
                 ) : (
@@ -152,7 +156,7 @@ export default function BookSearch({ onAdded }) {
                 )}
 
                 <div className={styles.info}>
-                  <h3 className={styles.bookTitle}>{book.title ?? 'Untitled'}</h3>
+                  <h3 className={styles.bookTitle}>{title}</h3>
                   {book.subtitle && <p className={styles.subtitle}>{book.subtitle}</p>}
                   <p className={styles.authors}>
                     by {authors}

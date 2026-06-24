@@ -5,7 +5,7 @@ import { getErrorMessage } from '../api/apiFetch.js';
 import styles from './AuthForm.module.css';
 
 export default function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, login, sessionExpired } = useAuth();
   const location = useLocation();
 
   const [email, setEmail] = useState('');
@@ -42,6 +42,15 @@ export default function LoginPage() {
   return (
     <main className={styles.page}>
       <h1 className={styles.heading}>Log in</h1>
+
+      {/* Shown only when a live session was ended out from under the user (see
+          AuthProvider), explaining why they landed back here. role="status" so it's
+          announced politely without stealing focus like an alert would. */}
+      {sessionExpired && (
+        <p className={styles.notice} role="status">
+          Your session has ended. Please log in again to continue.
+        </p>
+      )}
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && (

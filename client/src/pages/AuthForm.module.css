@@ -54,6 +54,19 @@
   color: var(--color-text-muted);
 }
 
+/* Informational banner (e.g. "your session ended"), not an error - calmer tone so
+   it reads as context for the page rather than a failed action. */
+.notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
 /* role="alert" on the element; this just styles it. */
 .error {
   margin: 0;

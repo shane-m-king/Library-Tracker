@@ -51,13 +51,21 @@ export default function LibraryPage() {
     }
   }
 
+  // Close the remove-confirmation modal, clearing both its target and any error it
+  // was showing - so a stale error from a previous attempt can't reappear when the
+  // modal is next opened. Used by the close button, Cancel, and a successful delete.
+  function closeDeleteModal() {
+    setDeletingItem(null);
+    setDeleteError(null);
+  }
+
   async function handleConfirmDelete() {
     setDeleting(true);
     setDeleteError(null);
     try {
       const { loansRemoved } = await deleteLibraryItem(deletingItem.id);
-      const title = deletingItem.book.title;
-      setDeletingItem(null);
+      const title = deletingItem.book.title; // capture before we clear deletingItem
+      closeDeleteModal();
       refetch();
       setNotice(
         loansRemoved > 0
@@ -187,10 +195,7 @@ export default function LibraryPage() {
       {/* Remove confirmation. */}
       <Modal
         isOpen={deletingItem !== null}
-        onClose={() => {
-          setDeletingItem(null);
-          setDeleteError(null);
-        }}
+        onClose={closeDeleteModal}
         title="Remove book"
       >
         {deletingItem && (
@@ -208,10 +213,7 @@ export default function LibraryPage() {
               <button
                 type="button"
                 className={styles.cancel}
-                onClick={() => {
-                  setDeletingItem(null);
-                  setDeleteError(null);
-                }}
+                onClick={closeDeleteModal}
                 disabled={deleting}
               >
                 Cancel

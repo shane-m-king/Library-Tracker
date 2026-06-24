@@ -4,6 +4,12 @@
 
 const GOOGLE_BOOKS_URL = 'https://www.googleapis.com/books/v1/volumes';
 
+// How long we'll wait on Google before giving up. fetch() has NO timeout of its
+// own, so without this a hung upstream would hang our request (and hold a
+// connection) indefinitely. 8s is generous for a JSON lookup yet bounds the worst
+// case the user can experience.
+const REQUEST_TIMEOUT_MS = 8000;
+
 // Google's cover URLs come back as http:// and sometimes carry a page-curl
 // effect. Normalize to https and strip the curl so covers render cleanly.
 function cleanImageUrl(url) {
@@ -137,6 +143,35 @@ export function rankResults(query, books) {
     .map((entry) => entry.book);
 }
 
+// One place that calls Google and returns parsed JSON, with a hard timeout and
+// consistent error tagging. Every thrown error carries a `.status` so the routes
+// can branch on it: the real HTTP status on a bad response (e.g. 429 = rate
+// limited, 404 = bad id), or 504 when WE gave up waiting. Without a status, a
+// timeout would fall through to a generic 500 instead of an upstream-failure 502.
+async function fetchGoogleJson(url) {
+  let response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  } catch (err) {
+    // AbortSignal.timeout aborts with a TimeoutError; anything else here is a
+    // network-level failure (DNS, refused, dropped). Either way it's an upstream
+    // problem, not ours - present it as a gateway timeout/failure.
+    const error = new Error(
+      err.name === 'TimeoutError'
+        ? `Google Books API timed out after ${REQUEST_TIMEOUT_MS}ms`
+        : `Could not reach Google Books: ${err.message}`
+    );
+    error.status = 504;
+    throw error;
+  }
+  if (!response.ok) {
+    const error = new Error(`Google Books API returned ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
+}
+
 // Search Google Books and return an array of normalized books, best match first.
 export async function searchBooks(queryText) {
   const params = new URLSearchParams({
@@ -149,15 +184,7 @@ export async function searchBooks(queryText) {
     params.set('key', process.env.GOOGLE_BOOKS_API_KEY);
   }
 
-  const response = await fetch(`${GOOGLE_BOOKS_URL}?${params}`);
-  if (!response.ok) {
-    // Attach the upstream status so the route can react (e.g. 429 = rate limited).
-    const error = new Error(`Google Books API returned ${response.status}`);
-    error.status = response.status;
-    throw error;
-  }
-
-  const data = await response.json();
+  const data = await fetchGoogleJson(`${GOOGLE_BOOKS_URL}?${params}`);
   const items = data.items ?? []; // no matches -> items is absent
   const books = items.map(normalizeVolume);
   // Re-rank so the book the user most likely wants is first, rather than trusting
@@ -178,13 +205,8 @@ export async function getVolume(volumeId) {
   const queryString = params.toString();
   const url = `${GOOGLE_BOOKS_URL}/${encodeURIComponent(volumeId)}${queryString ? `?${queryString}` : ''}`;
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    const error = new Error(`Google Books API returned ${response.status}`);
-    error.status = response.status; // 404 = bad id, 429 = rate limited, etc.
-    throw error;
-  }
-
-  const volume = await response.json();
+  // Same timeout + status-tagging as search (404 = bad id, 429 = rate limited, 504
+  // = we timed out). The single-volume endpoint returns the volume object directly.
+  const volume = await fetchGoogleJson(url);
   return normalizeVolume(volume);
 }

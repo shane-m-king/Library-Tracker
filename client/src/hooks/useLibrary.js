@@ -18,6 +18,12 @@ import { getErrorMessage } from '../api/apiFetch.js';
 // edit or delete in Step 5c) so the list reflects the new truth.
 export function useLibrary({ status } = {}) {
   const [items, setItems] = useState([]);
+  // `loading` is the INITIAL load only: true until the first fetch settles, then
+  // false forever. A background refetch (after an add/edit/delete, or a filter
+  // change) deliberately does NOT flip it back, so the existing list stays on
+  // screen while the new data loads (stale-while-revalidate) instead of flashing a
+  // spinner. This keeps that intent in one place rather than splitting it between
+  // the hook and the page.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,9 +40,10 @@ export function useLibrary({ status } = {}) {
     let cancelled = false;
 
     async function load() {
-      // Reset to a clean "loading" state for each run so a previous error or a
-      // stale list doesn't linger on screen while the new request is in flight.
-      setLoading(true);
+      // Clear any prior error so a failed load doesn't linger once we retry or
+      // change filter. We do NOT set loading=true here (see the useState note):
+      // the first load starts in the loading state, and later runs revalidate in
+      // the background with the current list still visible.
       setError(null);
       try {
         const { items } = await listLibrary({ status });
@@ -44,6 +51,8 @@ export function useLibrary({ status } = {}) {
       } catch (err) {
         if (!cancelled) setError(getErrorMessage(err, 'Could not load your library.'));
       } finally {
+        // After the first settle (success or failure) we're no longer in the
+        // initial-load state. Idempotent on every subsequent run.
         if (!cancelled) setLoading(false);
       }
     }

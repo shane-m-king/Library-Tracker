@@ -14,25 +14,30 @@ export function register({ email, password, displayName, username }) {
   return apiFetch('/auth/register', {
     method: 'POST',
     body: { email, password, displayName, username },
+    isAuthRequest: true,
   });
 }
 
-// POST /api/auth/login -> { user }. A wrong email or password throws ApiError 401.
+// POST /api/auth/login -> { user }. A wrong email or password throws ApiError 401 -
+// an expected outcome here, so isAuthRequest keeps it from tripping the global
+// session-expired handler (the user is trying to log IN, not being logged out).
 export function login({ email, password }) {
   return apiFetch('/auth/login', {
     method: 'POST',
     body: { email, password },
+    isAuthRequest: true,
   });
 }
 
 // POST /api/auth/logout -> { ok: true }. Clears the cookie; safe even if already
 // logged out.
 export function logout() {
-  return apiFetch('/auth/logout', { method: 'POST' });
+  return apiFetch('/auth/logout', { method: 'POST', isAuthRequest: true });
 }
 
 // GET /api/auth/me -> { user }. Throws ApiError 401 when no one is logged in - the
-// auth context uses that on load to tell "logged in" from "logged out".
+// auth context uses that on load to tell "logged in" from "logged out". That boot
+// 401 is expected, so isAuthRequest keeps it out of the global handler.
 export function getMe() {
-  return apiFetch('/auth/me');
+  return apiFetch('/auth/me', { isAuthRequest: true });
 }
