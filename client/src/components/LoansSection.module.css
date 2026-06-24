@@ -1,0 +1,134 @@
+/* Scoped to LoansSection. Sits below the library grid on LibraryPage, separated by a
+   top divider, with two labelled groups (Lent out / Borrowed). Cards style
+   themselves in LoanCard.module.css; the grid mirrors the library's. */
+
+.section {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Section title + the Current/History toggle on one row. Wraps on narrow widths so
+   the toggle drops below the title rather than overflowing. */
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 24px;
+  margin: 0;
+}
+
+/* The toggle and the Record button share the right-hand side of the header. */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 8px;
+}
+
+.recordButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.recordButton:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Pill toggle, matching the library's filter tabs. */
+.viewButton {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.viewButton:hover {
+  border-color: var(--color-accent);
+}
+
+.viewButtonActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.group {
+  margin-bottom: 32px;
+}
+
+.group:last-child {
+  margin-bottom: 0;
+}
+
+/* Group heading (Lent out / Borrowed) - an h3 under the section's h2 title. */
+.heading {
+  font-size: 18px;
+  margin: 0 0 16px;
+}
+
+/* Per-group "nothing here" note, shown when one direction is empty but the other has
+   loans (so both headings remain visible). */
+.empty {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Shared muted/centred style for the section-level loading, error, and "no loans at
+   all" messages. */
+.state {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 32px 0;
+}
+
+.error {
+  color: var(--color-danger);
+  margin: 0 0 16px;
+}
+
+.retry {
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Same responsive grid as the library list. */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}

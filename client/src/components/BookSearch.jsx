@@ -23,9 +23,16 @@ const MIN_QUERY_LENGTH = 2;
 //     classic out-of-order autocomplete bug), and we stop wasting a request we no
 //     longer care about.
 //
-// Props: onAdded - optional callback fired after a successful add (the library page
-// passes its refetch here so the list reflects the new book).
-export default function BookSearch({ onAdded }) {
+// Two modes, by prop:
+//   - add mode (default): each result has Add-as-owned / Wishlist buttons that POST
+//     to the library; onAdded fires after a successful add (the library page passes
+//     its refetch). This is the add-a-book flow.
+//   - select mode: pass onSelect(book) and each result shows a single "Select"
+//     button that hands the chosen book back instead. The loan form uses this to pick
+//     a book to record a borrow. Same search UI, just a different per-result action.
+//
+// Props: onAdded (add mode), onSelect (select mode). Provide one, not both.
+export default function BookSearch({ onAdded, onSelect }) {
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 350);
 
@@ -165,7 +172,16 @@ export default function BookSearch({ onAdded }) {
                 </div>
 
                 <div className={styles.actions}>
-                  {add?.phase === 'added' ? (
+                  {onSelect ? (
+                    // Select mode: hand the chosen book to the caller (the loan form).
+                    <button
+                      type="button"
+                      className={styles.addButton}
+                      onClick={() => onSelect(book)}
+                    >
+                      Select
+                    </button>
+                  ) : add?.phase === 'added' ? (
                     <span className={styles.added}>✓ Added to {add.addedAs}</span>
                   ) : (
                     <>
@@ -187,7 +203,7 @@ export default function BookSearch({ onAdded }) {
                       </button>
                     </>
                   )}
-                  {add?.phase === 'error' && (
+                  {!onSelect && add?.phase === 'error' && (
                     <span className={styles.addError}>{add.message}</span>
                   )}
                 </div>

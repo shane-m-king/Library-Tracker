@@ -61,7 +61,8 @@
   white-space: nowrap;
 }
 
-/* Transient confirmation banner (e.g. "Removed X. 1 loan removed."). */
+/* Transient banner (e.g. "Removed X. 1 loan removed."). Green by default for a
+   confirmation; the error modifier below recolours it when something failed. */
 .notice {
   display: flex;
   align-items: center;
@@ -74,6 +75,13 @@
   border: 1px solid #a7f3d0;
   color: #065f46;
   font-size: 14px;
+}
+
+/* Error tone - overrides the success colours for a failed action. */
+.noticeError {
+  background: #fdecec;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .noticeDismiss {

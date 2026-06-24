@@ -1,0 +1,161 @@
+/* Scoped to RecordLoanForm. A stacked form sized for the Modal body, mirroring
+   EditLibraryItemForm with a couple of loan-specific bits (the direction toggle and
+   the chosen-book chip for the borrow path). */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-family: inherit;
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* Direction toggle - pill buttons matching the filter tabs used elsewhere. */
+.directionToggle {
+  display: flex;
+  gap: 8px;
+}
+
+.directionButton {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.directionButton:hover {
+  border-color: var(--color-accent);
+}
+
+.directionButtonActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* The chosen book (borrow path) once a search result is selected. */
+.selectedBook {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.selectedCover {
+  flex-shrink: 0;
+  width: 36px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.selectedInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.selectedInfo span {
+  color: var(--color-text-muted);
+}
+
+.changeButton {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.changeButton:hover {
+  border-color: var(--color-accent);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cancel {
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.save {
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
