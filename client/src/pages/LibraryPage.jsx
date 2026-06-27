@@ -52,6 +52,22 @@ export default function LibraryPage() {
   const [notice, setNotice] = useState(null);
   const showNotice = (text, tone = 'success') => setNotice({ text, tone });
 
+  // Re-pull the affected lists after a mutation that ALREADY succeeded on the
+  // server. Kept separate from each mutation's own error handling: the write went
+  // through, so a refresh failure rolls nothing back - it just means what's on
+  // screen is now stale. The hooks keep the previous list visible (rather than
+  // blanking it) and reject here on failure, so we surface a clear notice instead of
+  // letting the mismatch pass silently (the refetch's error would otherwise only
+  // live in hook state we don't display while a list is already on screen).
+  function refreshAfterChange(...refetchers) {
+    Promise.all(refetchers.map((reload) => reload())).catch(() => {
+      showNotice(
+        'Your change went through, but the list couldn’t be refreshed — reload to see the latest.',
+        'error'
+      );
+    });
+  }
+
   // 'all' means "don't filter", so send undefined; otherwise pass the status
   // through. Changing `filter` re-runs the hook's fetch with the new value.
   const { items, loading, error, refetch } = useLibrary({
@@ -74,11 +90,10 @@ export default function LibraryPage() {
   // that switch removes the book's lent-out loans from the section below.
   function handleSaved({ loansRemoved }) {
     setEditingItem(null);
-    refetch();
-    refetchLoans();
     if (loansRemoved > 0) {
       showNotice(`Saved. ${loansRemoved} lent-out loan${loansRemoved === 1 ? '' : 's'} removed.`);
     }
+    refreshAfterChange(refetch, refetchLoans);
   }
 
   // Close the remove-confirmation modal, clearing both its target and any error it
@@ -95,12 +110,12 @@ export default function LibraryPage() {
   // there's no library refetch here.
   function handleLoanCreated(loan) {
     setIsRecordLoanOpen(false);
-    refetchLoans();
     showNotice(
       loan.direction === 'lent_out'
         ? `Lent “${loan.book.title}” to ${loan.counterpartyName}.`
         : `Recorded borrowing “${loan.book.title}” from ${loan.counterpartyName}.`
     );
+    refreshAfterChange(refetchLoans);
   }
 
   // One-click "Mark returned" from a loan card: stamp returnedOn with today and
@@ -108,8 +123,8 @@ export default function LibraryPage() {
   async function handleMarkReturned(loan) {
     try {
       await updateLoan(loan.id, { returnedOn: todayIso() });
-      refetchLoans();
       showNotice(`Marked “${loan.book.title}” returned.`);
+      refreshAfterChange(refetchLoans);
     } catch (err) {
       showNotice(getErrorMessage(err, 'Could not mark that loan returned.'), 'error');
     }
@@ -118,7 +133,7 @@ export default function LibraryPage() {
   // After a loan edit succeeds: close the modal and refresh the loans section.
   function handleLoanSaved() {
     setEditingLoan(null);
-    refetchLoans();
+    refreshAfterChange(refetchLoans);
   }
 
   // Close the loan remove-confirmation modal, clearing its target and any error -
@@ -135,8 +150,8 @@ export default function LibraryPage() {
       const title = deletingLoan.book.title; // capture before we clear deletingLoan
       await deleteLoan(deletingLoan.id);
       closeLoanDeleteModal();
-      refetchLoans();
       showNotice(`Removed the loan for “${title}”.`);
+      refreshAfterChange(refetchLoans);
     } catch (err) {
       setDeleteLoanError(getErrorMessage(err, 'Could not remove that loan.'));
     } finally {
@@ -151,13 +166,13 @@ export default function LibraryPage() {
       const { loansRemoved } = await deleteLibraryItem(deletingItem.id);
       const title = deletingItem.book.title; // capture before we clear deletingItem
       closeDeleteModal();
-      refetch();
-      refetchLoans(); // removing the book also clears its lent-out loans below
       showNotice(
         loansRemoved > 0
           ? `Removed “${title}”. ${loansRemoved} lent-out loan${loansRemoved === 1 ? '' : 's'} removed.`
           : `Removed “${title}”.`
       );
+      // Removing the book also clears its lent-out loans below, so refresh both.
+      refreshAfterChange(refetch, refetchLoans);
     } catch (err) {
       setDeleteError(getErrorMessage(err, 'Could not remove that book.'));
     } finally {
@@ -229,7 +244,9 @@ export default function LibraryPage() {
       ) : error && items.length === 0 ? (
         <div className={styles.state}>
           <p className={styles.error}>{error}</p>
-          <button type="button" className={styles.retry} onClick={refetch}>
+          {/* The failure is already in `error` (shown above), so ignore the retry's
+              own rejection to avoid an unhandled promise rejection. */}
+          <button type="button" className={styles.retry} onClick={() => refetch().catch(() => {})}>
             Try again
           </button>
         </div>
@@ -265,7 +282,7 @@ export default function LibraryPage() {
         loans={loans}
         loading={loansLoading}
         error={loansError}
-        onRetry={refetchLoans}
+        onRetry={() => refetchLoans().catch(() => {})}
         onRecordLoan={() => setIsRecordLoanOpen(true)}
         onMarkReturned={handleMarkReturned}
         onEditLoan={setEditingLoan}
@@ -279,6 +296,7 @@ export default function LibraryPage() {
       >
         {isRecordLoanOpen && (
           <RecordLoanForm
+            loans={loans}
             onCreated={handleLoanCreated}
             onCancel={() => setIsRecordLoanOpen(false)}
           />

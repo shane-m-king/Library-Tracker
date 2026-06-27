@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLibrary } from '../hooks/useLibrary.js';
 import { createLoan } from '../api/loans.js';
 import { getErrorMessage } from '../api/apiFetch.js';
@@ -13,13 +13,15 @@ import styles from './RecordLoanForm.module.css';
 //   - borrowed: you may not own it, so reuse BookSearch in select mode to find any
 //     book on Google and hand it back here.
 //
-// Props: onCreated(loan) - fired with the created loan on success; onCancel.
+// Props: loans - all the user's loans (from the page), used only to grey out owned
+// books whose copies are all already out; onCreated(loan) - fired with the created
+// loan on success; onCancel.
 const DIRECTIONS = [
   { key: 'lent_out', label: 'Lend out' },
   { key: 'borrowed', label: 'Borrow' },
 ];
 
-export default function RecordLoanForm({ onCreated, onCancel }) {
+export default function RecordLoanForm({ loans = [], onCreated, onCancel }) {
   const [direction, setDirection] = useState('lent_out');
   // The two selection mechanisms hold different things: lent_out picks an owned book's
   // googleVolumeId from a <select>; borrowed holds a whole book object from search.
@@ -39,6 +41,22 @@ export default function RecordLoanForm({ onCreated, onCancel }) {
   const { items: ownedItems, loading: ownedLoading, error: ownedError } = useLibrary({
     status: 'owned',
   });
+
+  // How many copies of each book are currently out on an ACTIVE lent-out loan,
+  // keyed by googleVolumeId. A book is fully lent when this reaches its owned
+  // quantity, in which case the picker greys it out: the server enforces the same
+  // rule (a 409 on submit), but disabling the option up front spares the user a
+  // dead-end choice. Borrowed loans don't count - they aren't your copies.
+  const activeLentByBook = useMemo(() => {
+    const counts = {};
+    for (const loan of loans) {
+      if (loan.direction === 'lent_out' && loan.active) {
+        const gid = loan.book.googleVolumeId;
+        counts[gid] = (counts[gid] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [loans]);
 
   function switchDirection(next) {
     if (next === direction) return;
@@ -123,11 +141,16 @@ export default function RecordLoanForm({ onCreated, onCancel }) {
               onChange={(e) => setOwnedGoogleId(e.target.value)}
             >
               <option value="">Choose a book…</option>
-              {ownedItems.map((item) => (
-                <option key={item.id} value={item.book.googleVolumeId}>
-                  {item.book.title}
-                </option>
-              ))}
+              {ownedItems.map((item) => {
+                const allOut =
+                  (activeLentByBook[item.book.googleVolumeId] ?? 0) >= item.quantity;
+                return (
+                  <option key={item.id} value={item.book.googleVolumeId} disabled={allOut}>
+                    {item.book.title}
+                    {allOut ? ' — all copies lent out' : ''}
+                  </option>
+                );
+              })}
             </select>
           )}
         </div>
