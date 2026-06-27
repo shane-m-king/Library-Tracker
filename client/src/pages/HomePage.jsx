@@ -20,6 +20,12 @@ export default function HomePage() {
             <Link to="/library" className={styles.cta}>
               My library
             </Link>
+            <Link to="/friends" className={styles.secondary}>
+              Friends
+            </Link>
+            <Link to="/profile" className={styles.secondary}>
+              Profile
+            </Link>
             <button type="button" className={styles.secondary} onClick={logout}>
               Log out
             </button>

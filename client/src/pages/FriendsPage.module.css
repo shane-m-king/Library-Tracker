@@ -1,0 +1,174 @@
+/* Scoped to FriendsPage. The page shell, the section/group headings, the
+   loading/empty/error message style, and the per-row action buttons. The person
+   rows themselves style in PersonRow.module.css; the search rows in
+   UserSearch.module.css. */
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 32px;
+  margin: 0;
+}
+
+.backLink {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Transient banner; green for a confirmation, recoloured by the error modifier. */
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 14px;
+}
+
+.noticeError {
+  background: #fdecec;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.noticeDismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Each area (requests, friends, find people). */
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  margin: 0 0 16px;
+}
+
+/* A labelled sub-group within Requests (Incoming / Sent). */
+.group {
+  margin-bottom: 16px;
+}
+
+.groupTitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 8px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Shared loading / empty / error message style. */
+.state {
+  color: var(--color-text-muted);
+  padding: 8px 0;
+}
+
+.error {
+  color: var(--color-danger);
+  margin: 0 0 12px;
+}
+
+.retry {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Per-row actions. primary = accept (solid accent); secondary = decline / cancel /
+   unfriend (outlined). Both sit inside PersonRow's right-aligned actions slot. */
+.primaryAction {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryAction:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.secondaryAction {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.secondaryAction:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.primaryAction:disabled,
+.secondaryAction:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* "View library" link, styled like a secondary action but as an <a> (inline-block so
+   the padding/border size it like the buttons beside it). */
+.viewLink {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.viewLink:hover {
+  border-color: var(--color-accent);
+  text-decoration: none;
+}

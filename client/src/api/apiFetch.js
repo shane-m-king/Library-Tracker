@@ -5,15 +5,27 @@
 
 const API_BASE = '/api';
 
+// How long the client waits for the server before giving up. fetch() has no timeout
+// of its own, so without this a hung or unreachable backend (e.g. a dev server that
+// was suspended, holding its port) hangs the request - and the UI - indefinitely;
+// the auth bootstrap in particular would sit on "Checking your session…" forever.
+// This stays comfortably ABOVE the server's own upstream timeouts (its Google Books
+// fetch is 8s) so we never abort a request the server is still legitimately working.
+const REQUEST_TIMEOUT_MS = 15000;
+
 // A thrown ApiError carries the HTTP status alongside the message, so callers can
 // branch on it (e.g. err.status === 401 -> send them to the login page) while
-// still having err.message ready to show the user. Subclassing Error means
-// `instanceof ApiError` works and stack traces stay intact.
+// still having err.message ready to show the user. It also keeps the parsed
+// response body in `data`, for the cases where an error response carries extra
+// fields a caller needs - e.g. a 403 from the friend-library route includes the
+// `visibility` level, so the UI can say "friends only" vs "private". Subclassing
+// Error means `instanceof ApiError` works and stack traces stay intact.
 export class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, data = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -48,20 +60,25 @@ export function setUnauthorizedHandler(handler) {
 //   signal - an optional AbortSignal. Pass one to cancel the request in flight
 //            (e.g. a superseded search keystroke); aborting rejects with an
 //            AbortError, which we deliberately let through unchanged (see below).
+//            It's combined with an internal timeout, so the request aborts on
+//            whichever fires first - the caller's cancel or our timeout.
 //   isAuthRequest - set true for the auth-flow calls themselves (login, register,
 //            getMe, logout). For those a 401 is an EXPECTED answer ("wrong password",
 //            "not logged in yet"), not a session that died mid-use - so we skip the
 //            global unauthorized handler and just let the caller handle the error.
 // Resolves to the parsed JSON body on success; throws ApiError on any non-2xx.
 export async function apiFetch(path, { method = 'GET', body, signal, isAuthRequest = false } = {}) {
+  // Abort the request once it outlives our timeout, combined with any caller-supplied
+  // signal so EITHER can abort it: the caller's explicit cancel (a superseded search
+  // keystroke) or the timeout, whichever comes first.
+  const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   const options = {
     method,
     // Send (and accept) our httpOnly auth cookie. fetch omits cookies by default,
     // so without this every protected route would behave as if we're logged out.
     credentials: 'include',
     headers: {},
-    // Undefined is fine - fetch simply ignores a missing signal.
-    signal,
+    signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
   };
 
   if (body !== undefined) {
@@ -73,10 +90,17 @@ export async function apiFetch(path, { method = 'GET', body, signal, isAuthReque
   try {
     response = await fetch(`${API_BASE}${path}`, options);
   } catch (err) {
-    // An aborted request rejects with an AbortError. That's not a failure - it's us
-    // cancelling on purpose - so rethrow it untouched, letting the caller recognise
-    // and ignore it instead of showing a bogus "server's down" message.
+    // A CALLER-cancelled request (controller.abort()) rejects with an AbortError.
+    // That's intentional, not a failure - rethrow it untouched so the caller can
+    // recognise and ignore it (e.g. a superseded search keystroke) instead of
+    // showing a bogus "server's down" message.
     if (err.name === 'AbortError') throw err;
+    // OUR timeout fires a TimeoutError. Turn it into a clear, user-facing error
+    // rather than a silent hang - this is what stops a dead or slow backend from
+    // freezing the UI (the bootstrap getMe then falls through to logged-out).
+    if (err.name === 'TimeoutError') {
+      throw new ApiError('The server took too long to respond. Please try again.', 0);
+    }
     // Otherwise fetch only rejects on a network-level failure (server down, DNS,
     // refused connection) - never on an HTTP error status. Surface it as a clear,
     // catchable error rather than letting a raw TypeError bubble up.
@@ -105,9 +129,11 @@ export async function apiFetch(path, { method = 'GET', body, signal, isAuthReque
     if (response.status === 401 && !isAuthRequest) {
       onUnauthorized?.();
     }
-    // Prefer the server's own message; fall back to a generic one by status.
+    // Prefer the server's own message; fall back to a generic one by status. Pass
+    // the parsed body through so callers can read any extra fields (e.g. a 403's
+    // `visibility`).
     const message = data?.error ?? `Request failed (${response.status})`;
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, data);
   }
 
   return data;

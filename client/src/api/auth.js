@@ -18,13 +18,15 @@ export function register({ email, password, displayName, username }) {
   });
 }
 
-// POST /api/auth/login -> { user }. A wrong email or password throws ApiError 401 -
-// an expected outcome here, so isAuthRequest keeps it from tripping the global
-// session-expired handler (the user is trying to log IN, not being logged out).
-export function login({ email, password }) {
+// POST /api/auth/login -> { user }. Login is by USERNAME (the unique handle), not
+// email - display_name isn't unique, so it couldn't identify one account. A wrong
+// username or password throws ApiError 401 - an expected outcome here, so
+// isAuthRequest keeps it from tripping the global session-expired handler (the user
+// is trying to log IN, not being logged out).
+export function login({ username, password }) {
   return apiFetch('/auth/login', {
     method: 'POST',
-    body: { email, password },
+    body: { username, password },
     isAuthRequest: true,
   });
 }

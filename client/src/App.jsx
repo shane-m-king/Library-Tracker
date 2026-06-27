@@ -5,6 +5,9 @@ import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import LibraryPage from './pages/LibraryPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
+import FriendsPage from './pages/FriendsPage.jsx'
+import UserLibraryPage from './pages/UserLibraryPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 
 // The app's route table.
@@ -30,6 +33,30 @@ function App() {
         element={
           <ProtectedRoute>
             <LibraryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <FriendsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users/:id/library"
+        element={
+          <ProtectedRoute>
+            <UserLibraryPage />
           </ProtectedRoute>
         }
       />

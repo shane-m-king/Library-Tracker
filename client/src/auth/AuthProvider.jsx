@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AuthContext } from './AuthContext.js';
 import { setUnauthorizedHandler } from '../api/apiFetch.js';
 import * as authApi from '../api/auth.js';
+import * as usersApi from '../api/users.js';
 
 // Holds the current user and exposes the auth actions to the entire app. Mount it
 // once near the root (around <App>). The model:
@@ -97,7 +98,34 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const value = { user, loading, sessionExpired, login, register, logout };
+  // Edit the logged-in user's own profile. The server returns the updated user, so
+  // we replace `user` with it - keeping this context the single source of truth for
+  // who's logged in, exactly like login/register. Throws on failure so the form can
+  // surface it (e.g. a 409 "username taken").
+  async function updateProfile(changes) {
+    const { user } = await usersApi.updateMe(changes);
+    setUser(user);
+    return user;
+  }
+
+  // Permanently delete the account. The server cascades the user's data and clears
+  // the cookie; we drop the local user so the UI flips to logged-out. Throws on
+  // failure so the caller can keep the confirm dialog open and show the error.
+  async function deleteAccount() {
+    await usersApi.deleteMe();
+    setUser(null);
+  }
+
+  const value = {
+    user,
+    loading,
+    sessionExpired,
+    login,
+    register,
+    logout,
+    updateProfile,
+    deleteAccount,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -8,7 +8,7 @@ export default function LoginPage() {
   const { user, login, sessionExpired } = useAuth();
   const location = useLocation();
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -30,7 +30,7 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login({ email, password });
+      await login({ username, password });
       // Success: `user` is now set, so the guard above redirects on the re-render.
       // We deliberately don't reset `submitting` - the component is on its way out.
     } catch (err) {
@@ -60,16 +60,16 @@ export default function LoginPage() {
         )}
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="email">
-            Email
+          <label className={styles.label} htmlFor="username">
+            Username
           </label>
           <input
             className={styles.input}
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
             required
           />
         </div>

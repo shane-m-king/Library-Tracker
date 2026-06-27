@@ -1,0 +1,43 @@
+/* Scoped to PersonRow: the shared person-in-a-list row used by user search, the
+   friends list, and pending requests. Consumers supply the action buttons as
+   children and style those themselves; this owns the row layout. */
+
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* The identity column flexes to fill the space; min-width:0 lets a long name wrap
+   instead of pushing the actions off the row. */
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+
+.handle {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Actions sit at the right. They wrap so a two-button pair (or a button plus a
+   status/error message) drops to a new line instead of overflowing. */
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}

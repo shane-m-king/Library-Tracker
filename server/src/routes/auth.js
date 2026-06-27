@@ -13,10 +13,11 @@ const router = Router();
 const SALT_ROUNDS = 12;
 
 // A throwaway bcrypt hash computed once at startup. On login, if no user matches
-// the email, we still compare the password against THIS hash. bcrypt.compare is
-// deliberately slow, so always running it keeps the response time the same
-// whether or not the email exists - denying attackers a timing signal they could
-// use to discover which emails have accounts.
+// the username, we still compare the password against THIS hash. bcrypt.compare is
+// deliberately slow, so always running it keeps the response time the same whether
+// or not the account exists - so the password check itself leaks no timing signal.
+// (Usernames are public anyway - they're discoverable via user search - so the goal
+// here is protecting the password comparison, not hiding which handles exist.)
 const DUMMY_HASH = bcrypt.hashSync('no-user-will-ever-match-this', SALT_ROUNDS);
 
 // POST /api/auth/register
@@ -90,21 +91,26 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-// Verify credentials and, on success, issue the auth cookie.
+// Verify credentials and, on success, issue the auth cookie. Users log in with their
+// username (the unique, case-insensitive handle), not their email - display_name
+// isn't unique, so it could never identify a single account.
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body ?? {};
+  const { username, password } = req.body ?? {};
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'email and password are required' });
+  if (!username || !password) {
+    return res.status(400).json({ error: 'username and password are required' });
   }
 
   try {
     // We need password_hash here (unlike register's RETURNING) to compare against.
+    // username is CITEXT, so the match is case-insensitive; we trim surrounding
+    // whitespace to mirror how it was stored. String() keeps a non-string body value
+    // from throwing on .trim() - it just won't match a real row.
     const result = await query(
       `SELECT ${USER_COLUMNS}, password_hash
          FROM users
-        WHERE email = $1`,
-      [email]
+        WHERE username = $1`,
+      [String(username).trim()]
     );
     const user = result.rows[0];
 
@@ -114,9 +120,9 @@ router.post('/login', async (req, res) => {
     const passwordMatches = await bcrypt.compare(password, hashToCheck);
 
     if (!user || !passwordMatches) {
-      // Intentionally vague: we don't reveal whether it was the email or the
-      // password that was wrong, so we don't confirm which emails are registered.
-      return res.status(401).json({ error: 'invalid email or password' });
+      // Intentionally vague: we don't reveal whether it was the username or the
+      // password that was wrong.
+      return res.status(401).json({ error: 'invalid username or password' });
     }
 
     setAuthCookie(res, user.id);

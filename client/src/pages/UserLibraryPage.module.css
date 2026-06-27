@@ -1,0 +1,97 @@
+/* Scoped to UserLibraryPage: the page shell, the profile heading, the status filter
+   tabs, the loading/empty/error/blocked message style, and the card grid. The cards
+   style themselves in LibraryItemCard.module.css. Mirrors LibraryPage's grid + filter
+   styling (a Step 8 consolidation candidate). */
+
+.page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 32px;
+  margin: 0;
+}
+
+.handle {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.backLink {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.filterButton {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filterButton:hover {
+  border-color: var(--color-accent);
+}
+
+.filterButtonActive {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* Shared loading / empty / error / blocked message style. */
+.state {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 48px 0;
+}
+
+.error {
+  color: var(--color-danger);
+  margin: 0 0 16px;
+}
+
+.retry {
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retry:hover {
+  background: var(--color-accent-hover);
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
