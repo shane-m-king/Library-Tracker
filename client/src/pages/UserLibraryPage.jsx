@@ -3,6 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { useUser } from '../hooks/useUser.js';
 import { useUserLibrary } from '../hooks/useUserLibrary.js';
 import LibraryItemCard from '../components/LibraryItemCard.jsx';
+import Button from '../components/Button.jsx';
+import ToggleGroup from '../components/ToggleGroup.jsx';
+import { LIBRARY_FILTERS } from '../lib/libraryFilters.js';
 import styles from './UserLibraryPage.module.css';
 
 // Read-only view of ANOTHER user's library, reached from a friend row (or any
@@ -10,12 +13,6 @@ import styles from './UserLibraryPage.module.css';
 // heading) and their library (visibility-gated server-side). The same
 // LibraryItemCard the owner sees is reused WITHOUT onEdit/onDelete, so it renders
 // with no action buttons - the read-only view falls out of the optional props.
-
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'owned', label: 'Owned' },
-  { key: 'wishlist', label: 'Wishlist' },
-];
 
 export default function UserLibraryPage() {
   const { id } = useParams();
@@ -74,21 +71,13 @@ export default function UserLibraryPage() {
         </p>
       ) : (
         <>
-          <div className={styles.filters} role="group" aria-label="Filter library by status">
-            {FILTERS.map(({ key, label }) => (
-              <button
-                key={key}
-                type="button"
-                className={`${styles.filterButton} ${
-                  filter === key ? styles.filterButtonActive : ''
-                }`}
-                aria-pressed={filter === key}
-                onClick={() => setFilter(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            options={LIBRARY_FILTERS}
+            value={filter}
+            onChange={setFilter}
+            ariaLabel="Filter library by status"
+            className={styles.filters}
+          />
 
           {/* Stale-while-revalidate: the big states only show on the initial load. */}
           {loading && items.length === 0 ? (
@@ -96,13 +85,9 @@ export default function UserLibraryPage() {
           ) : error && items.length === 0 ? (
             <div className={styles.state}>
               <p className={styles.error}>{error}</p>
-              <button
-                type="button"
-                className={styles.retry}
-                onClick={() => refetch().catch(() => {})}
-              >
+              <Button variant="primary" onClick={() => refetch().catch(() => {})}>
                 Try again
-              </button>
+              </Button>
             </div>
           ) : items.length === 0 ? (
             <p className={styles.state}>

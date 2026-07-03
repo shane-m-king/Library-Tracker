@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
+import Button from '../components/Button.jsx';
 import styles from './HomePage.module.css';
 
 // Landing page. It now reflects auth state: a logged-in visitor sees who they are
@@ -17,30 +18,30 @@ export default function HomePage() {
         <>
           <p className={styles.subtitle}>Logged in as @{user.username}.</p>
           <div className={styles.actions}>
-            <Link to="/library" className={styles.cta}>
+            <Button as={Link} to="/library" variant="primary" size="lg">
               My library
-            </Link>
-            <Link to="/friends" className={styles.secondary}>
+            </Button>
+            <Button as={Link} to="/friends" variant="secondary" size="lg">
               Friends
-            </Link>
-            <Link to="/profile" className={styles.secondary}>
+            </Button>
+            <Button as={Link} to="/profile" variant="secondary" size="lg">
               Profile
-            </Link>
-            <button type="button" className={styles.secondary} onClick={logout}>
+            </Button>
+            <Button variant="secondary" size="lg" onClick={logout}>
               Log out
-            </button>
+            </Button>
           </div>
         </>
       ) : (
         <>
           <p className={styles.subtitle}>Track the books you own, want, and lend.</p>
           <div className={styles.actions}>
-            <Link to="/login" className={styles.cta}>
+            <Button as={Link} to="/login" variant="primary" size="lg">
               Log in
-            </Link>
-            <Link to="/register" className={styles.secondary}>
+            </Button>
+            <Button as={Link} to="/register" variant="secondary" size="lg">
               Register
-            </Link>
+            </Button>
           </div>
         </>
       )}

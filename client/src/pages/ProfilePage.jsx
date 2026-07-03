@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import Button from '../components/Button.jsx';
+import Field from '../components/Field.jsx';
 import Notice from '../components/Notice.jsx';
 import { useNotice } from '../hooks/useNotice.js';
 import styles from './ProfilePage.module.css';
@@ -139,63 +141,49 @@ export default function ProfilePage() {
           <span className={styles.hint}>Email can’t be changed here.</span>
         </div>
 
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="profile-displayName">
-            Display name
-          </label>
-          <input
-            id="profile-displayName"
-            name="displayName"
-            type="text"
-            className={styles.input}
-            value={form.displayName}
-            onChange={handleChange}
-            autoComplete="name"
-          />
-        </div>
+        <Field
+          label="Display name"
+          htmlFor="profile-displayName"
+          name="displayName"
+          type="text"
+          value={form.displayName}
+          onChange={handleChange}
+          autoComplete="name"
+        />
 
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="profile-username">
-            Username
-          </label>
-          <input
-            id="profile-username"
-            name="username"
-            type="text"
-            className={styles.input}
-            value={form.username}
-            onChange={handleChange}
-            autoComplete="username"
-            pattern="[A-Za-z0-9_]{3,30}"
-            title="3 to 30 characters: letters, numbers, or underscores"
-          />
-          <span className={styles.hint}>3–30 characters: letters, numbers, or underscores.</span>
-        </div>
+        <Field
+          label="Username"
+          htmlFor="profile-username"
+          name="username"
+          type="text"
+          value={form.username}
+          onChange={handleChange}
+          autoComplete="username"
+          pattern="[A-Za-z0-9_]{3,30}"
+          title="3 to 30 characters: letters, numbers, or underscores"
+          hint="3–30 characters: letters, numbers, or underscores."
+        />
 
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="profile-visibility">
-            Library visibility
-          </label>
-          <select
-            id="profile-visibility"
-            name="libraryVisibility"
-            className={styles.input}
-            value={form.libraryVisibility}
-            onChange={handleChange}
-          >
-            {VISIBILITIES.map((v) => (
-              <option key={v.value} value={v.value}>
-                {v.label}
-              </option>
-            ))}
-          </select>
-          {chosenVisibility && <span className={styles.hint}>{chosenVisibility.hint}</span>}
-        </div>
+        <Field
+          label="Library visibility"
+          htmlFor="profile-visibility"
+          as="select"
+          name="libraryVisibility"
+          value={form.libraryVisibility}
+          onChange={handleChange}
+          hint={chosenVisibility?.hint}
+        >
+          {VISIBILITIES.map((v) => (
+            <option key={v.value} value={v.value}>
+              {v.label}
+            </option>
+          ))}
+        </Field>
 
         <div className={styles.actions}>
-          <button type="submit" className={styles.save} disabled={submitting}>
+          <Button type="submit" variant="primary" disabled={submitting}>
             {submitting ? 'Saving…' : 'Save changes'}
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -206,16 +194,15 @@ export default function ProfilePage() {
           Permanently delete your account and everything in it — your library, loans, and
           friendships. This can’t be undone.
         </p>
-        <button
-          type="button"
-          className={styles.deleteButton}
+        <Button
+          variant="danger"
           onClick={() => {
             setDeleteError(null);
             setIsDeleteOpen(true);
           }}
         >
           Delete my account
-        </button>
+        </Button>
       </section>
 
       <ConfirmDialog

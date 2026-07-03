@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
 import { getErrorMessage } from '../api/apiFetch.js';
+import Button from '../components/Button.jsx';
+import Field from '../components/Field.jsx';
 import styles from './AuthForm.module.css';
 
 export default function LoginPage() {
@@ -59,39 +61,29 @@ export default function LoginPage() {
           </p>
         )}
 
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="username">
-            Username
-          </label>
-          <input
-            className={styles.input}
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            required
-          />
-        </div>
+        <Field
+          label="Username"
+          htmlFor="username"
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          required
+        />
 
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="password">
-            Password
-          </label>
-          <input
-            className={styles.input}
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </div>
+        <Field
+          label="Password"
+          htmlFor="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
 
-        <button className={styles.submit} type="submit" disabled={submitting}>
+        <Button type="submit" variant="primary" size="lg" disabled={submitting}>
           {submitting ? 'Logging in…' : 'Log in'}
-        </button>
+        </Button>
       </form>
 
       <p className={styles.footer}>

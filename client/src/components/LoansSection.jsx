@@ -1,4 +1,6 @@
 import LoanCard from './LoanCard.jsx';
+import Button from './Button.jsx';
+import ToggleGroup from './ToggleGroup.jsx';
 import styles from './LoansSection.module.css';
 
 // The two views of the loans area. 'current' = active (not yet returned) loans, the
@@ -58,9 +60,9 @@ export default function LoansSection({
       ) : error && loans.length === 0 ? (
         <div className={styles.state}>
           <p className={styles.error}>{error}</p>
-          <button type="button" className={styles.retry} onClick={onRetry}>
+          <Button variant="primary" onClick={onRetry}>
             Try again
-          </button>
+          </Button>
         </div>
       ) : (
         <>
@@ -69,27 +71,16 @@ export default function LoansSection({
             <div className={styles.headerActions}>
               {/* The view toggle is only meaningful once there are loans to slice. */}
               {loans.length > 0 && (
-                <div
-                  className={styles.viewToggle}
-                  role="group"
-                  aria-label="Show current loans or history"
-                >
-                  {VIEWS.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      className={`${styles.viewButton} ${view === key ? styles.viewButtonActive : ''}`}
-                      aria-pressed={view === key}
-                      onClick={() => onViewChange(key)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <ToggleGroup
+                  options={VIEWS}
+                  value={view}
+                  onChange={onViewChange}
+                  ariaLabel="Show current loans or history"
+                />
               )}
-              <button type="button" className={styles.recordButton} onClick={onRecordLoan}>
+              <Button variant="primary" onClick={onRecordLoan}>
                 Record a loan
-              </button>
+              </Button>
             </div>
           </div>
 

@@ -34,31 +34,9 @@
   white-space: nowrap;
 }
 
+/* Layout only - the filter pills style themselves in ToggleGroup. */
 .filters {
-  display: flex;
-  gap: 8px;
   margin-bottom: 24px;
-}
-
-.filterButton {
-  padding: 6px 16px;
-  border-radius: 999px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.filterButton:hover {
-  border-color: var(--color-accent);
-}
-
-.filterButtonActive {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
 }
 
 /* Shared loading / empty / error / blocked message style. */
@@ -73,19 +51,6 @@
   margin: 0 0 16px;
 }
 
-.retry {
-  padding: 8px 18px;
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.retry:hover {
-  background: var(--color-accent-hover);
-}
 
 .grid {
   list-style: none;

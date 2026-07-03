@@ -1,0 +1,28 @@
+/* A single-select segmented pill control (see components/ToggleGroup.jsx). The
+   selected pill is filled with the accent; the rest are outlined. */
+
+.group {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--color-accent);
+}
+
+.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}

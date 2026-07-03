@@ -24,35 +24,3 @@
   justify-content: center;
   align-items: center;
 }
-
-/* Primary action - a solid accent button/link. */
-.cta {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  color: #fff;
-  font-weight: 600;
-}
-
-.cta:hover {
-  background: var(--color-accent-hover);
-  text-decoration: none;
-}
-
-/* Secondary action - an outlined button/link. Used by both a <Link> (register) and
-   a <button> (log out), so it has to look right for either element. */
-.secondary {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: var(--radius);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.secondary:hover {
-  border-color: var(--color-accent);
-  text-decoration: none;
-}

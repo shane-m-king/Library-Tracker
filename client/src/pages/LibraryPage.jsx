@@ -8,6 +8,7 @@ import { getErrorMessage } from '../api/apiFetch.js';
 import { todayIso } from '../lib/dates.js';
 import LibraryItemCard from '../components/LibraryItemCard.jsx';
 import LoansSection from '../components/LoansSection.jsx';
+import Button from '../components/Button.jsx';
 import Notice from '../components/Notice.jsx';
 import Modal from '../components/Modal.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
@@ -17,16 +18,9 @@ import BookSearch from '../components/BookSearch.jsx';
 import EditLibraryItemForm from '../components/EditLibraryItemForm.jsx';
 import RecordLoanForm from '../components/RecordLoanForm.jsx';
 import EditLoanForm from '../components/EditLoanForm.jsx';
+import ToggleGroup from '../components/ToggleGroup.jsx';
+import { LIBRARY_FILTERS } from '../lib/libraryFilters.js';
 import styles from './LibraryPage.module.css';
-
-// The three filter choices. 'all' is the UI's "no filter" - we translate it to
-// undefined for the hook, since the API has no 'all' status (omitting ?status=
-// returns everything). Kept as data so the buttons render from one source.
-const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'owned', label: 'Owned' },
-  { key: 'wishlist', label: 'Wishlist' },
-];
 
 // The user's library: a filterable list of their books, with add / edit / remove.
 // Driven by real collection data via the useLibrary hook; all mutations refetch so
@@ -195,13 +189,9 @@ export default function LibraryPage() {
           Your library
         </h1>
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.addButton}
-            onClick={() => setIsAddOpen(true)}
-          >
+          <Button variant="primary" onClick={() => setIsAddOpen(true)}>
             Add book
-          </button>
+          </Button>
           <Link to="/" className={styles.backLink}>
             Back home
           </Link>
@@ -210,23 +200,14 @@ export default function LibraryPage() {
 
       <Notice notice={notice} onDismiss={clearNotice} />
 
-      {/* Filter tabs. aria-pressed marks the active one for assistive tech; the
-          styling does the same job visually. */}
-      <div className={styles.filters} role="group" aria-label="Filter library by status">
-        {FILTERS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            className={`${styles.filterButton} ${
-              filter === key ? styles.filterButtonActive : ''
-            }`}
-            aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Filter tabs. */}
+      <ToggleGroup
+        options={LIBRARY_FILTERS}
+        value={filter}
+        onChange={setFilter}
+        ariaLabel="Filter library by status"
+        className={styles.filters}
+      />
 
       {/* Stale-while-revalidate: the big loading/error states only show on the
           INITIAL load (when there's nothing on screen yet). Once we have items, a
@@ -240,18 +221,18 @@ export default function LibraryPage() {
           <p className={styles.error}>{error}</p>
           {/* The failure is already in `error` (shown above), so ignore the retry's
               own rejection to avoid an unhandled promise rejection. */}
-          <button type="button" className={styles.retry} onClick={() => refetch().catch(() => {})}>
+          <Button variant="primary" onClick={() => refetch().catch(() => {})}>
             Try again
-          </button>
+          </Button>
         </div>
       ) : items.length === 0 ? (
         <p className={styles.state}>
           {filter === 'all' ? (
             <>
               No books yet.{' '}
-              <button type="button" className={styles.linkButton} onClick={() => setIsAddOpen(true)}>
+              <Button variant="link" onClick={() => setIsAddOpen(true)}>
                 Add your first book
-              </button>
+              </Button>
               .
             </>
           ) : (

@@ -5,6 +5,8 @@ import { getErrorMessage } from '../api/apiFetch.js';
 import { todayIso } from '../lib/dates.js';
 import BookSearch from './BookSearch.jsx';
 import Button from './Button.jsx';
+import ToggleGroup from './ToggleGroup.jsx';
+import Field from './Field.jsx';
 import styles from './RecordLoanForm.module.css';
 
 // Record a loan from inside the Modal. Two directions, two ways to choose the book:
@@ -103,58 +105,49 @@ export default function RecordLoanForm({ loans = [], onCreated, onCancel }) {
     <form className={styles.form} onSubmit={handleSubmit}>
       <div className={styles.field}>
         <span className={styles.label}>Type</span>
-        <div className={styles.directionToggle} role="group" aria-label="Loan type">
-          {DIRECTIONS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={`${styles.directionButton} ${
-                direction === key ? styles.directionButtonActive : ''
-              }`}
-              aria-pressed={direction === key}
-              onClick={() => switchDirection(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <ToggleGroup
+          options={DIRECTIONS}
+          value={direction}
+          onChange={switchDirection}
+          ariaLabel="Loan type"
+        />
       </div>
 
       {/* Book selection - a picker of owned books to lend, or a search to borrow. */}
       {direction === 'lent_out' ? (
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="loan-book">
-            Book
-          </label>
-          {ownedLoading ? (
-            <p className={styles.hint}>Loading your books…</p>
-          ) : ownedError ? (
-            <p className={styles.error}>{ownedError}</p>
-          ) : ownedItems.length === 0 ? (
-            <p className={styles.hint}>
-              You don’t own any books yet. Add a book to your library first to lend it.
-            </p>
-          ) : (
-            <select
-              id="loan-book"
-              className={styles.input}
-              value={ownedGoogleId}
-              onChange={(e) => setOwnedGoogleId(e.target.value)}
-            >
-              <option value="">Choose a book…</option>
-              {ownedItems.map((item) => {
-                const allOut =
-                  (activeLentByBook[item.book.googleVolumeId] ?? 0) >= item.quantity;
-                return (
-                  <option key={item.id} value={item.book.googleVolumeId} disabled={allOut}>
-                    {item.book.title}
-                    {allOut ? ' — all copies lent out' : ''}
-                  </option>
-                );
-              })}
-            </select>
-          )}
-        </div>
+        ownedLoading || ownedError || ownedItems.length === 0 ? (
+          <div className={styles.field}>
+            <span className={styles.label}>Book</span>
+            {ownedLoading ? (
+              <p className={styles.hint}>Loading your books…</p>
+            ) : ownedError ? (
+              <p className={styles.error}>{ownedError}</p>
+            ) : (
+              <p className={styles.hint}>
+                You don’t own any books yet. Add a book to your library first to lend it.
+              </p>
+            )}
+          </div>
+        ) : (
+          <Field
+            label="Book"
+            htmlFor="loan-book"
+            as="select"
+            value={ownedGoogleId}
+            onChange={(e) => setOwnedGoogleId(e.target.value)}
+          >
+            <option value="">Choose a book…</option>
+            {ownedItems.map((item) => {
+              const allOut = (activeLentByBook[item.book.googleVolumeId] ?? 0) >= item.quantity;
+              return (
+                <option key={item.id} value={item.book.googleVolumeId} disabled={allOut}>
+                  {item.book.title}
+                  {allOut ? ' — all copies lent out' : ''}
+                </option>
+              );
+            })}
+          </Field>
+        )
       ) : (
         <div className={styles.field}>
           <span className={styles.label}>Book</span>
@@ -182,58 +175,41 @@ export default function RecordLoanForm({ loans = [], onCreated, onCancel }) {
         </div>
       )}
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="loan-counterparty">
-          {counterpartyLabel}
-        </label>
-        <input
-          id="loan-counterparty"
-          type="text"
-          className={styles.input}
-          value={counterpartyName}
-          onChange={(e) => setCounterpartyName(e.target.value)}
-          placeholder="Person’s name"
-        />
-      </div>
+      <Field
+        label={counterpartyLabel}
+        htmlFor="loan-counterparty"
+        type="text"
+        value={counterpartyName}
+        onChange={(e) => setCounterpartyName(e.target.value)}
+        placeholder="Person’s name"
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="loan-loanedOn">
-          Loaned on
-        </label>
-        <input
-          id="loan-loanedOn"
-          type="date"
-          className={styles.input}
-          value={loanedOn}
-          onChange={(e) => setLoanedOn(e.target.value)}
-        />
-      </div>
+      <Field
+        label="Loaned on"
+        htmlFor="loan-loanedOn"
+        type="date"
+        value={loanedOn}
+        onChange={(e) => setLoanedOn(e.target.value)}
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="loan-dueDate">
-          Due date <span className={styles.optional}>(optional)</span>
-        </label>
-        <input
-          id="loan-dueDate"
-          type="date"
-          className={styles.input}
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
-      </div>
+      <Field
+        label="Due date"
+        htmlFor="loan-dueDate"
+        type="date"
+        value={dueDate}
+        onChange={(e) => setDueDate(e.target.value)}
+        optional
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="loan-notes">
-          Notes <span className={styles.optional}>(optional)</span>
-        </label>
-        <textarea
-          id="loan-notes"
-          className={styles.input}
-          rows={2}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-      </div>
+      <Field
+        label="Notes"
+        htmlFor="loan-notes"
+        as="textarea"
+        rows={2}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        optional
+      />
 
       {error && (
         <p className={styles.error} role="alert">

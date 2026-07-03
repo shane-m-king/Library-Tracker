@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { updateLibraryItem } from '../api/library.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import Button from './Button.jsx';
+import Field from './Field.jsx';
 import styles from './EditLibraryItemForm.module.css';
 
 // Edit one library entry's personal fields (the catalog book itself is never edited
@@ -108,101 +109,74 @@ export default function EditLibraryItemForm({ item, onSaved, onCancel }) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-status">
-          Status
-        </label>
-        <select
-          id="edit-status"
-          name="status"
-          className={styles.input}
-          value={form.status}
-          onChange={handleChange}
-          autoFocus
-        >
-          <option value="owned">Owned</option>
-          <option value="wishlist">Wishlist</option>
-        </select>
-      </div>
+      <Field
+        label="Status"
+        htmlFor="edit-status"
+        as="select"
+        name="status"
+        value={form.status}
+        onChange={handleChange}
+        autoFocus
+      >
+        <option value="owned">Owned</option>
+        <option value="wishlist">Wishlist</option>
+      </Field>
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-rating">
-          Rating
-        </label>
-        <select
-          id="edit-rating"
-          name="rating"
-          className={styles.input}
-          value={form.rating}
-          onChange={handleChange}
-        >
-          <option value="">No rating</option>
-          {RATINGS.map((n) => (
-            <option key={n} value={n}>
-              {n} / 5
-            </option>
-          ))}
-        </select>
-      </div>
+      <Field
+        label="Rating"
+        htmlFor="edit-rating"
+        as="select"
+        name="rating"
+        value={form.rating}
+        onChange={handleChange}
+      >
+        <option value="">No rating</option>
+        {RATINGS.map((n) => (
+          <option key={n} value={n}>
+            {n} / 5
+          </option>
+        ))}
+      </Field>
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-quantity">
-          Quantity owned
-        </label>
-        <input
-          id="edit-quantity"
-          name="quantity"
-          type="number"
-          min="1"
-          step="1"
-          className={styles.input}
-          value={form.quantity}
-          onChange={handleChange}
-        />
-      </div>
+      <Field
+        label="Quantity owned"
+        htmlFor="edit-quantity"
+        name="quantity"
+        type="number"
+        min="1"
+        step="1"
+        value={form.quantity}
+        onChange={handleChange}
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-notes">
-          Notes
-        </label>
-        <textarea
-          id="edit-notes"
-          name="notes"
-          className={styles.input}
-          rows={3}
-          value={form.notes}
-          onChange={handleChange}
-        />
-      </div>
+      <Field
+        label="Notes"
+        htmlFor="edit-notes"
+        as="textarea"
+        name="notes"
+        rows={3}
+        value={form.notes}
+        onChange={handleChange}
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-acquiredDate">
-          Acquired date
-        </label>
-        <input
-          id="edit-acquiredDate"
-          name="acquiredDate"
-          type="date"
-          className={styles.input}
-          value={form.acquiredDate}
-          onChange={handleChange}
-        />
-      </div>
+      <Field
+        label="Acquired date"
+        htmlFor="edit-acquiredDate"
+        name="acquiredDate"
+        type="date"
+        value={form.acquiredDate}
+        onChange={handleChange}
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-acquiredPlace">
-          Acquired from
-        </label>
-        <input
-          id="edit-acquiredPlace"
-          name="acquiredPlace"
-          type="text"
-          className={styles.input}
-          value={form.acquiredPlace}
-          onChange={handleChange}
-          placeholder="e.g. a used bookshop"
-        />
-      </div>
+      <Field
+        label="Acquired from"
+        htmlFor="edit-acquiredPlace"
+        name="acquiredPlace"
+        type="text"
+        value={form.acquiredPlace}
+        onChange={handleChange}
+        placeholder="e.g. a used bookshop"
+      />
 
       {awaitingWishlistConfirm && (
         <p className={styles.warning} role="alert">

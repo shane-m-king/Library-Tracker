@@ -10,6 +10,7 @@ import {
 import { getErrorMessage } from '../api/apiFetch.js';
 import PersonRow from '../components/PersonRow.jsx';
 import UserSearch from '../components/UserSearch.jsx';
+import Button from '../components/Button.jsx';
 import Notice from '../components/Notice.jsx';
 import { useNotice } from '../hooks/useNotice.js';
 import { useRefreshAfterChange } from '../hooks/useRefreshAfterChange.js';
@@ -105,13 +106,9 @@ export default function FriendsPage() {
         ) : requestsError && requests.length === 0 ? (
           <div className={styles.state}>
             <p className={styles.error}>{requestsError}</p>
-            <button
-              type="button"
-              className={styles.retry}
-              onClick={() => refetchRequests().catch(() => {})}
-            >
+            <Button variant="primary" onClick={() => refetchRequests().catch(() => {})}>
               Try again
-            </button>
+            </Button>
           </div>
         ) : requests.length === 0 ? (
           <p className={styles.state}>No pending requests.</p>
@@ -123,22 +120,22 @@ export default function FriendsPage() {
                 <ul className={styles.list}>
                   {incoming.map((req) => (
                     <PersonRow key={req.id} user={req.user}>
-                      <button
-                        type="button"
-                        className={styles.primaryAction}
+                      <Button
+                        variant="primary"
+                        size="sm"
                         disabled={busyIds.has(req.id)}
                         onClick={() => handleAccept(req)}
                       >
                         Accept
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.secondaryAction}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         disabled={busyIds.has(req.id)}
                         onClick={() => handleDecline(req)}
                       >
                         Decline
-                      </button>
+                      </Button>
                     </PersonRow>
                   ))}
                 </ul>
@@ -150,14 +147,14 @@ export default function FriendsPage() {
                 <ul className={styles.list}>
                   {outgoing.map((req) => (
                     <PersonRow key={req.id} user={req.user}>
-                      <button
-                        type="button"
-                        className={styles.secondaryAction}
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         disabled={busyIds.has(req.id)}
                         onClick={() => handleCancel(req)}
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </PersonRow>
                   ))}
                 </ul>
@@ -175,13 +172,9 @@ export default function FriendsPage() {
         ) : friendsError && friends.length === 0 ? (
           <div className={styles.state}>
             <p className={styles.error}>{friendsError}</p>
-            <button
-              type="button"
-              className={styles.retry}
-              onClick={() => refetchFriends().catch(() => {})}
-            >
+            <Button variant="primary" onClick={() => refetchFriends().catch(() => {})}>
               Try again
-            </button>
+            </Button>
           </div>
         ) : friends.length === 0 ? (
           <p className={styles.state}>
@@ -191,17 +184,22 @@ export default function FriendsPage() {
           <ul className={styles.list}>
             {friends.map((friend) => (
               <PersonRow key={friend.id} user={friend.user}>
-                <Link to={`/users/${friend.user.id}/library`} className={styles.viewLink}>
+                <Button
+                  as={Link}
+                  to={`/users/${friend.user.id}/library`}
+                  variant="secondary"
+                  size="sm"
+                >
                   View library
-                </Link>
-                <button
-                  type="button"
-                  className={styles.secondaryAction}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   disabled={busyIds.has(friend.id)}
                   onClick={() => handleUnfriend(friend)}
                 >
                   Unfriend
-                </button>
+                </Button>
               </PersonRow>
             ))}
           </ul>

@@ -49,21 +49,6 @@
   font-weight: 600;
 }
 
-.input {
-  padding: 10px 12px;
-  font-size: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: #fff;
-  color: var(--color-text);
-}
-
-.input:focus {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
-  border-color: var(--color-accent);
-}
-
 /* A read-only value displayed like text rather than an input (the email). */
 .readonly {
   margin: 0;
@@ -80,26 +65,6 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
-}
-
-.save {
-  padding: 10px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--color-accent);
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.save:hover:not(:disabled) {
-  background: var(--color-accent-hover);
-}
-
-.save:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* Danger zone: clearly separated, outlined in the danger colour so deleting the
@@ -123,17 +88,3 @@
   color: var(--color-text-muted);
 }
 
-.deleteButton {
-  padding: 9px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--color-danger);
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.deleteButton:hover {
-  opacity: 0.9;
-}

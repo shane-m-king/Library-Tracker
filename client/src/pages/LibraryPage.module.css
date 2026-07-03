@@ -35,33 +35,6 @@
   gap: 16px;
 }
 
-.addButton {
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.addButton:hover {
-  background: var(--color-accent-hover);
-}
-
-/* A button that looks like an inline text link - used in the empty state to open the
-   add modal without faking a link with an <a>. */
-.linkButton {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--color-accent);
-  font: inherit;
-  cursor: pointer;
-  text-decoration: underline;
-}
 
 .backLink {
   color: var(--color-text-muted);
@@ -69,32 +42,9 @@
   white-space: nowrap;
 }
 
+/* Layout only - the filter pills style themselves in ToggleGroup. */
 .filters {
-  display: flex;
-  gap: 8px;
   margin-bottom: 24px;
-}
-
-
-.filterButton {
-  padding: 6px 16px;
-  border-radius: 999px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.filterButton:hover {
-  border-color: var(--color-accent);
-}
-
-.filterButtonActive {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
 }
 
 /* Shared style for the loading / empty / error messages: muted, centred, with
@@ -110,19 +60,6 @@
   margin: 0 0 16px;
 }
 
-.retry {
-  padding: 8px 18px;
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.retry:hover {
-  background: var(--color-accent-hover);
-}
 
 /* Responsive grid: as many ~280px columns as fit, then wrap. auto-fill keeps the
    card width steady and just changes how many sit per row. The list-style reset

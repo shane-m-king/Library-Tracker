@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { updateLoan } from '../api/loans.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import Button from './Button.jsx';
+import Field from './Field.jsx';
 import styles from './EditLoanForm.module.css';
 
 // Edit one loan's mutable fields. The book and direction define the loan and aren't
@@ -96,62 +97,46 @@ export default function EditLoanForm({ loan, onSaved, onCancel }) {
         <span>{loan.direction === 'lent_out' ? 'Lent out' : 'Borrowed'}</span>
       </p>
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-loan-counterparty">
-          {counterpartyLabel}
-        </label>
-        <input
-          id="edit-loan-counterparty"
-          name="counterpartyName"
-          type="text"
-          className={styles.input}
-          value={form.counterpartyName}
-          onChange={handleChange}
-          autoFocus
-        />
-      </div>
+      <Field
+        label={counterpartyLabel}
+        htmlFor="edit-loan-counterparty"
+        name="counterpartyName"
+        type="text"
+        value={form.counterpartyName}
+        onChange={handleChange}
+        autoFocus
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-loan-dueDate">
-          Due date <span className={styles.optional}>(optional)</span>
-        </label>
-        <input
-          id="edit-loan-dueDate"
-          name="dueDate"
-          type="date"
-          className={styles.input}
-          value={form.dueDate}
-          onChange={handleChange}
-        />
-      </div>
+      <Field
+        label="Due date"
+        htmlFor="edit-loan-dueDate"
+        name="dueDate"
+        type="date"
+        value={form.dueDate}
+        onChange={handleChange}
+        optional
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-loan-returnedOn">
-          Returned on <span className={styles.optional}>(leave blank if not returned)</span>
-        </label>
-        <input
-          id="edit-loan-returnedOn"
-          name="returnedOn"
-          type="date"
-          className={styles.input}
-          value={form.returnedOn}
-          onChange={handleChange}
-        />
-      </div>
+      <Field
+        label="Returned on"
+        htmlFor="edit-loan-returnedOn"
+        name="returnedOn"
+        type="date"
+        value={form.returnedOn}
+        onChange={handleChange}
+        optional="(leave blank if not returned)"
+      />
 
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="edit-loan-notes">
-          Notes <span className={styles.optional}>(optional)</span>
-        </label>
-        <textarea
-          id="edit-loan-notes"
-          name="notes"
-          className={styles.input}
-          rows={2}
-          value={form.notes}
-          onChange={handleChange}
-        />
-      </div>
+      <Field
+        label="Notes"
+        htmlFor="edit-loan-notes"
+        as="textarea"
+        name="notes"
+        rows={2}
+        value={form.notes}
+        onChange={handleChange}
+        optional
+      />
 
       {error && (
         <p className={styles.error} role="alert">

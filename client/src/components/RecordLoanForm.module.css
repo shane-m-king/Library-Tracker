@@ -19,23 +19,6 @@
   font-weight: 600;
 }
 
-.optional {
-  font-weight: 400;
-  color: var(--color-text-muted);
-}
-
-.input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 15px;
-  font-family: inherit;
-}
-
-textarea.input {
-  resize: vertical;
-}
 
 .hint {
   margin: 0;
@@ -44,31 +27,7 @@ textarea.input {
 }
 
 /* Direction toggle - pill buttons matching the filter tabs used elsewhere. */
-.directionToggle {
-  display: flex;
-  gap: 8px;
-}
-
-.directionButton {
-  padding: 6px 16px;
-  border-radius: 999px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.directionButton:hover {
-  border-color: var(--color-accent);
-}
-
-.directionButtonActive {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
+/* The loan-type toggle renders via the shared <ToggleGroup>. */
 
 /* The chosen book (borrow path) once a search result is selected. */
 .selectedBook {
