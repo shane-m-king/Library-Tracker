@@ -4,6 +4,7 @@ import { createLoan } from '../api/loans.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import { todayIso } from '../lib/dates.js';
 import BookSearch from './BookSearch.jsx';
+import Button from './Button.jsx';
 import styles from './RecordLoanForm.module.css';
 
 // Record a loan from inside the Modal. Two directions, two ways to choose the book:
@@ -166,13 +167,14 @@ export default function RecordLoanForm({ loans = [], onCreated, onCancel }) {
                 <strong>{borrowBook.title ?? 'Untitled'}</strong>
                 {borrowBook.authors?.length > 0 && <span>{borrowBook.authors.join(', ')}</span>}
               </div>
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="xs"
                 className={styles.changeButton}
                 onClick={() => setBorrowBook(null)}
               >
                 Change
-              </button>
+              </Button>
             </div>
           ) : (
             <BookSearch onSelect={setBorrowBook} />
@@ -240,12 +242,12 @@ export default function RecordLoanForm({ loans = [], onCreated, onCancel }) {
       )}
 
       <div className={styles.actions}>
-        <button type="button" className={styles.cancel} onClick={onCancel} disabled={submitting}>
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancel
-        </button>
-        <button type="submit" className={styles.save} disabled={!canSubmit}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={!canSubmit}>
           {submitting ? 'Saving…' : 'Record loan'}
-        </button>
+        </Button>
       </div>
     </form>
   );

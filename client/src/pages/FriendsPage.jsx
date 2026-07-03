@@ -10,6 +10,9 @@ import {
 import { getErrorMessage } from '../api/apiFetch.js';
 import PersonRow from '../components/PersonRow.jsx';
 import UserSearch from '../components/UserSearch.jsx';
+import Notice from '../components/Notice.jsx';
+import { useNotice } from '../hooks/useNotice.js';
+import { useRefreshAfterChange } from '../hooks/useRefreshAfterChange.js';
 import styles from './FriendsPage.module.css';
 
 // The social hub. Owns the friends + pending-requests data (so a mutation can
@@ -31,9 +34,8 @@ export default function FriendsPage() {
     refetch: refetchRequests,
   } = useFriendRequests();
 
-  // A transient banner: { text, tone }, same pattern as LibraryPage.
-  const [notice, setNotice] = useState(null);
-  const showNotice = (text, tone = 'success') => setNotice({ text, tone });
+  const { notice, showNotice, clearNotice } = useNotice();
+  const refreshAfterChange = useRefreshAfterChange(showNotice);
   // The set of friendship ids whose action is in flight, so each acting row's buttons
   // disable independently (acting on one row never disables another).
   const [busyIds, setBusyIds] = useState(() => new Set());
@@ -45,24 +47,17 @@ export default function FriendsPage() {
 
   // Run a per-row action: mark the row busy, do the mutation, confirm it, then
   // refresh the affected lists - holding busy until the refresh settles so the row
-  // can't be double-acted. `acted` lets us tell a mutation failure (show the
-  // server's message) from a refresh failure (the action DID happen - just warn the
-  // view is stale), so we never mislabel one as the other.
+  // can't be double-acted. refreshAfterChange handles its own failure (warning that
+  // the view is stale) and never rethrows, so the catch below only ever sees a
+  // MUTATION error - no need to disambiguate the two.
   async function act(id, mutate, successText, refetchers) {
     setBusyIds((prev) => new Set(prev).add(id));
-    let acted = false;
     try {
       await mutate();
-      acted = true;
       showNotice(successText);
-      await Promise.all(refetchers.map((reload) => reload()));
+      await refreshAfterChange(...refetchers);
     } catch (err) {
-      showNotice(
-        acted
-          ? 'That worked, but the lists couldn’t refresh — reload to see the latest.'
-          : getErrorMessage(err, 'Something went wrong.'),
-        'error'
-      );
+      showNotice(getErrorMessage(err, 'Something went wrong.'), 'error');
     } finally {
       setBusyIds((prev) => {
         const next = new Set(prev);
@@ -100,22 +95,7 @@ export default function FriendsPage() {
         </Link>
       </div>
 
-      {notice && (
-        <div
-          className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`}
-          role={notice.tone === 'error' ? 'alert' : 'status'}
-        >
-          <span>{notice.text}</span>
-          <button
-            type="button"
-            className={styles.noticeDismiss}
-            onClick={() => setNotice(null)}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <Notice notice={notice} onDismiss={clearNotice} />
 
       {/* Pending requests. */}
       <section className={styles.section} aria-label="Pending requests">

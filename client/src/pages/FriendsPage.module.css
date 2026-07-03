@@ -28,37 +28,6 @@
   white-space: nowrap;
 }
 
-/* Transient banner; green for a confirmation, recoloured by the error modifier. */
-.notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-  font-size: 14px;
-}
-
-.noticeError {
-  background: #fdecec;
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-.noticeDismiss {
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
 /* Each area (requests, friends, find people). */
 .section {
   margin-bottom: 32px;

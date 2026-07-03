@@ -101,21 +101,11 @@ textarea.input {
   color: var(--color-text-muted);
 }
 
+/* Layout only - the "Change" button's look comes from the shared <Button>; this just
+   pushes it to the right of the selected-book row. */
 .changeButton {
   margin-left: auto;
   flex-shrink: 0;
-  padding: 4px 12px;
-  border-radius: var(--radius);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.changeButton:hover {
-  border-color: var(--color-accent);
 }
 
 .error {
@@ -128,34 +118,4 @@ textarea.input {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.cancel {
-  padding: 9px 18px;
-  border-radius: var(--radius);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.cancel:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.save {
-  padding: 9px 18px;
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.save:disabled {
-  opacity: 0.6;
-  cursor: default;
 }

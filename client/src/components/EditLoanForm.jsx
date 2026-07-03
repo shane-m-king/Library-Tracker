@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { updateLoan } from '../api/loans.js';
 import { getErrorMessage } from '../api/apiFetch.js';
+import Button from './Button.jsx';
 import styles from './EditLoanForm.module.css';
 
 // Edit one loan's mutable fields. The book and direction define the loan and aren't
@@ -159,12 +160,12 @@ export default function EditLoanForm({ loan, onSaved, onCancel }) {
       )}
 
       <div className={styles.actions}>
-        <button type="button" className={styles.cancel} onClick={onCancel} disabled={submitting}>
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancel
-        </button>
-        <button type="submit" className={styles.save} disabled={submitting}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? 'Saving…' : 'Save changes'}
-        </button>
+        </Button>
       </div>
     </form>
   );

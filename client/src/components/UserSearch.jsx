@@ -4,6 +4,7 @@ import { sendFriendRequest } from '../api/friends.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import PersonRow from './PersonRow.jsx';
+import Button from './Button.jsx';
 import styles from './UserSearch.module.css';
 
 // Find people by username or display name and send them a friend request. This is
@@ -111,14 +112,14 @@ export default function UserSearch() {
                 {req?.phase === 'sent' ? (
                   <span className={styles.sent}>✓ Request sent</span>
                 ) : (
-                  <button
-                    type="button"
-                    className={styles.addButton}
+                  <Button
+                    variant="primary"
+                    size="sm"
                     disabled={req?.phase === 'sending'}
                     onClick={() => handleSendRequest(user)}
                   >
                     {req?.phase === 'sending' ? 'Sending…' : 'Add friend'}
-                  </button>
+                  </Button>
                 )}
                 {req?.phase === 'error' && <span className={styles.addError}>{req.message}</span>}
               </PersonRow>

@@ -8,7 +8,11 @@ import { getErrorMessage } from '../api/apiFetch.js';
 import { todayIso } from '../lib/dates.js';
 import LibraryItemCard from '../components/LibraryItemCard.jsx';
 import LoansSection from '../components/LoansSection.jsx';
+import Notice from '../components/Notice.jsx';
 import Modal from '../components/Modal.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import { useNotice } from '../hooks/useNotice.js';
+import { useRefreshAfterChange } from '../hooks/useRefreshAfterChange.js';
 import BookSearch from '../components/BookSearch.jsx';
 import EditLibraryItemForm from '../components/EditLibraryItemForm.jsx';
 import RecordLoanForm from '../components/RecordLoanForm.jsx';
@@ -49,8 +53,7 @@ export default function LibraryPage() {
   // A transient banner: { text, tone }, where tone is 'success' (default) or 'error'.
   // Most actions confirm success here; mark-returned also reports a failure through it,
   // so the tone stops an error from being styled - and announced - as a success.
-  const [notice, setNotice] = useState(null);
-  const showNotice = (text, tone = 'success') => setNotice({ text, tone });
+  const { notice, showNotice, clearNotice } = useNotice();
   // Which loans view (current/history) LoansSection shows. Lifted here so a mutation
   // that produces a now-ACTIVE loan - recording one, or un-returning one from History
   // - can snap the toggle back to Current; otherwise the result lands in a view the
@@ -62,21 +65,10 @@ export default function LibraryPage() {
   // so we send focus here - a stable landmark - instead of letting it fall to <body>.
   const headingRef = useRef(null);
 
-  // Re-pull the affected lists after a mutation that ALREADY succeeded on the
-  // server. Kept separate from each mutation's own error handling: the write went
-  // through, so a refresh failure rolls nothing back - it just means what's on
-  // screen is now stale. The hooks keep the previous list visible (rather than
-  // blanking it) and reject here on failure, so we surface a clear notice instead of
-  // letting the mismatch pass silently (the refetch's error would otherwise only
-  // live in hook state we don't display while a list is already on screen).
-  function refreshAfterChange(...refetchers) {
-    Promise.all(refetchers.map((reload) => reload())).catch(() => {
-      showNotice(
-        'Your change went through, but the list couldn’t be refreshed — reload to see the latest.',
-        'error'
-      );
-    });
-  }
+  // Re-pull the affected lists after a mutation that already succeeded (shared with
+  // FriendsPage): on a refresh failure it warns that the view is stale rather than
+  // letting the mismatch pass silently. See the hook for the full reasoning.
+  const refreshAfterChange = useRefreshAfterChange(showNotice);
 
   // 'all' means "don't filter", so send undefined; otherwise pass the status
   // through. Changing `filter` re-runs the hook's fetch with the new value.
@@ -216,23 +208,7 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      {notice && (
-        <div
-          className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`}
-          // An error is announced assertively (alert); a success politely (status).
-          role={notice.tone === 'error' ? 'alert' : 'status'}
-        >
-          <span>{notice.text}</span>
-          <button
-            type="button"
-            className={styles.noticeDismiss}
-            onClick={() => setNotice(null)}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <Notice notice={notice} onDismiss={clearNotice} />
 
       {/* Filter tabs. aria-pressed marks the active one for assistive tech; the
           styling does the same job visually. */}
@@ -341,44 +317,22 @@ export default function LibraryPage() {
       </Modal>
 
       {/* Remove-loan confirmation. */}
-      <Modal
+      <ConfirmDialog
         isOpen={deletingLoan !== null}
         onClose={closeLoanDeleteModal}
         title="Remove loan"
+        onConfirm={handleConfirmDeleteLoan}
+        busy={deletingLoanBusy}
+        error={deleteLoanError}
         returnFocusRef={headingRef}
       >
         {deletingLoan && (
-          <div className={styles.confirm}>
-            <p>
-              Remove the loan record for <strong>{deletingLoan.book.title}</strong>? This
-              only deletes the loan, not the book. This can’t be undone.
-            </p>
-            {deleteLoanError && (
-              <p className={styles.error} role="alert">
-                {deleteLoanError}
-              </p>
-            )}
-            <div className={styles.confirmActions}>
-              <button
-                type="button"
-                className={styles.cancel}
-                onClick={closeLoanDeleteModal}
-                disabled={deletingLoanBusy}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.confirmRemove}
-                onClick={handleConfirmDeleteLoan}
-                disabled={deletingLoanBusy}
-              >
-                {deletingLoanBusy ? 'Removing…' : 'Remove'}
-              </button>
-            </div>
-          </div>
+          <p>
+            Remove the loan record for <strong>{deletingLoan.book.title}</strong>? This
+            only deletes the loan, not the book. This can’t be undone.
+          </p>
         )}
-      </Modal>
+      </ConfirmDialog>
 
       <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add a book">
         {/* refetch on each add so closing the modal reveals an up-to-date list. */}
@@ -403,44 +357,22 @@ export default function LibraryPage() {
       </Modal>
 
       {/* Remove confirmation. */}
-      <Modal
+      <ConfirmDialog
         isOpen={deletingItem !== null}
         onClose={closeDeleteModal}
         title="Remove book"
+        onConfirm={handleConfirmDelete}
+        busy={deleting}
+        error={deleteError}
         returnFocusRef={headingRef}
       >
         {deletingItem && (
-          <div className={styles.confirm}>
-            <p>
-              Remove <strong>{deletingItem.book.title}</strong> from your library? Any
-              lent-out loans for it will be removed too. This can’t be undone.
-            </p>
-            {deleteError && (
-              <p className={styles.error} role="alert">
-                {deleteError}
-              </p>
-            )}
-            <div className={styles.confirmActions}>
-              <button
-                type="button"
-                className={styles.cancel}
-                onClick={closeDeleteModal}
-                disabled={deleting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.confirmRemove}
-                onClick={handleConfirmDelete}
-                disabled={deleting}
-              >
-                {deleting ? 'Removing…' : 'Remove'}
-              </button>
-            </div>
-          </div>
+          <p>
+            Remove <strong>{deletingItem.book.title}</strong> from your library? Any
+            lent-out loans for it will be removed too. This can’t be undone.
+          </p>
         )}
-      </Modal>
+      </ConfirmDialog>
     </main>
   );
 }

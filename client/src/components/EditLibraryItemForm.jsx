@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { updateLibraryItem } from '../api/library.js';
 import { getErrorMessage } from '../api/apiFetch.js';
+import Button from './Button.jsx';
 import styles from './EditLibraryItemForm.module.css';
 
 // Edit one library entry's personal fields (the catalog book itself is never edited
@@ -218,17 +219,12 @@ export default function EditLibraryItemForm({ item, onSaved, onCancel }) {
       )}
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.cancel}
-          onClick={onCancel}
-          disabled={submitting}
-        >
+        <Button variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancel
-        </button>
-        <button type="submit" className={styles.save} disabled={submitting}>
+        </Button>
+        <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? 'Saving…' : awaitingWishlistConfirm ? 'Save (confirm)' : 'Save changes'}
-        </button>
+        </Button>
       </div>
     </form>
   );

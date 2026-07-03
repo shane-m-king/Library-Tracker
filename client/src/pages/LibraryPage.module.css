@@ -69,83 +69,12 @@
   white-space: nowrap;
 }
 
-/* Transient banner (e.g. "Removed X. 1 loan removed."). Green by default for a
-   confirmation; the error modifier below recolours it when something failed. */
-.notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-  font-size: 14px;
-}
-
-/* Error tone - overrides the success colours for a failed action. */
-.noticeError {
-  background: #fdecec;
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-.noticeDismiss {
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
 .filters {
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
 }
 
-/* Remove-confirmation body inside the Modal. */
-.confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.confirmActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.cancel {
-  padding: 9px 18px;
-  border-radius: var(--radius);
-  background: transparent;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.cancel:disabled,
-.confirmRemove:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.confirmRemove {
-  padding: 9px 18px;
-  border-radius: var(--radius);
-  background: var(--color-danger);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
 
 .filterButton {
   padding: 6px 16px;

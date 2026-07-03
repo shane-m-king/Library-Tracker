@@ -1,3 +1,4 @@
+import Button from './Button.jsx';
 import styles from './LibraryItemCard.module.css';
 
 // One book in a library list: cover, title/subtitle, authors, and a row of meta
@@ -61,18 +62,14 @@ export default function LibraryItemCard({ item, onEdit, onDelete }) {
         {(onEdit || onDelete) && (
           <div className={styles.cardActions}>
             {onEdit && (
-              <button type="button" className={styles.editButton} onClick={() => onEdit(item)}>
+              <Button variant="secondary" size="xs" onClick={() => onEdit(item)}>
                 Edit
-              </button>
+              </Button>
             )}
             {onDelete && (
-              <button
-                type="button"
-                className={styles.removeButton}
-                onClick={() => onDelete(item)}
-              >
+              <Button variant="dangerOutline" size="xs" onClick={() => onDelete(item)}>
                 Remove
-              </button>
+              </Button>
             )}
           </div>
         )}

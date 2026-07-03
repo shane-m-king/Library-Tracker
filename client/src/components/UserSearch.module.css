@@ -35,23 +35,6 @@
   gap: 12px;
 }
 
-.addButton {
-  padding: 6px 14px;
-  border-radius: var(--radius);
-  background: var(--color-accent);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.addButton:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 .sent {
   color: #15803d;
   font-size: 13px;

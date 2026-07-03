@@ -1,0 +1,33 @@
+/* The transient action-result banner (see components/Notice.jsx). Success is green;
+   the error modifier recolours it to the danger palette. Shared by the library,
+   friends and profile pages. */
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 14px;
+}
+
+.error {
+  background: #fdecec;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.dismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}

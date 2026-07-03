@@ -141,46 +141,4 @@
   margin-top: 12px;
 }
 
-.returnButton,
-.editButton,
-.removeButton {
-  padding: 4px 12px;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* The headline action on an active loan: filled, to stand out from the outlined pair. */
-.returnButton {
-  background: var(--color-accent);
-  border: 1px solid var(--color-accent);
-  color: #fff;
-}
-
-.returnButton:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-}
-
-.editButton,
-.removeButton {
-  background: transparent;
-  border: 1px solid var(--color-border);
-}
-
-.editButton {
-  color: var(--color-text);
-}
-
-.editButton:hover {
-  border-color: var(--color-accent);
-}
-
-.removeButton {
-  color: var(--color-danger);
-}
-
-.removeButton:hover {
-  border-color: var(--color-danger);
-}
+/* Card actions render via the shared <Button> primitive. */

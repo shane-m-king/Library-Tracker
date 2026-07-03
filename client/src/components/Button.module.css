@@ -1,0 +1,85 @@
+/* The button primitive (see components/Button.jsx). Base + a size scale + variants.
+   display:inline-block + text-align:center so it looks right whether it renders a
+   <button> or an <a>/<Link>. */
+
+.button {
+  display: inline-block;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- size scale --- */
+.xs {
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.md {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.lg {
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+/* --- variants --- */
+.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.secondary:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+.danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.dangerOutline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-danger);
+}
+.dangerOutline:hover:not(:disabled) {
+  border-color: var(--color-danger);
+}
+
+/* An inline text link that happens to be a <button> (or a Link). Ignores size. */
+.link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  text-decoration: underline;
+}

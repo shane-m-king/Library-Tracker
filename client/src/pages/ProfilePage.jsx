@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
 import { getErrorMessage } from '../api/apiFetch.js';
-import Modal from '../components/Modal.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import Notice from '../components/Notice.jsx';
+import { useNotice } from '../hooks/useNotice.js';
 import styles from './ProfilePage.module.css';
 
 // Your own account: view your email (read-only here - changing it needs its own
@@ -35,10 +37,7 @@ export default function ProfilePage() {
     libraryVisibility: user.libraryVisibility,
   });
   const [submitting, setSubmitting] = useState(false);
-  // A transient banner: { text, tone } where tone is 'success' | 'error', matching
-  // LibraryPage's pattern so the styling/ARIA role follows the tone.
-  const [notice, setNotice] = useState(null);
-  const showNotice = (text, tone = 'success') => setNotice({ text, tone });
+  const { notice, showNotice, clearNotice } = useNotice();
 
   // Account-deletion modal state, mirroring the library/loan remove confirmations.
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -48,7 +47,7 @@ export default function ProfilePage() {
   function handleChange(event) {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (notice) setNotice(null);
+    if (notice) clearNotice();
   }
 
   // PATCH diff: send only the fields that actually changed from the current user.
@@ -130,14 +129,7 @@ export default function ProfilePage() {
         </Link>
       </div>
 
-      {notice && (
-        <div
-          className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`}
-          role={notice.tone === 'error' ? 'alert' : 'status'}
-        >
-          {notice.text}
-        </div>
-      )}
+      <Notice notice={notice} onDismiss={clearNotice} />
 
       <form className={styles.form} onSubmit={handleSubmit}>
         {/* Email is shown for reference but isn't editable here. */}
@@ -226,37 +218,21 @@ export default function ProfilePage() {
         </button>
       </section>
 
-      <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Delete account">
-        <div className={styles.confirm}>
-          <p>
-            Permanently delete your account, <strong>@{user.username}</strong>? Your library,
-            loans, and friendships will all be removed. This can’t be undone.
-          </p>
-          {deleteError && (
-            <p className={styles.confirmError} role="alert">
-              {deleteError}
-            </p>
-          )}
-          <div className={styles.confirmActions}>
-            <button
-              type="button"
-              className={styles.cancel}
-              onClick={() => setIsDeleteOpen(false)}
-              disabled={deleting}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className={styles.confirmRemove}
-              onClick={handleConfirmDelete}
-              disabled={deleting}
-            >
-              {deleting ? 'Deleting…' : 'Delete account'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        title="Delete account"
+        onConfirm={handleConfirmDelete}
+        confirmLabel="Delete account"
+        busyLabel="Deleting…"
+        busy={deleting}
+        error={deleteError}
+      >
+        <p>
+          Permanently delete your account, <strong>@{user.username}</strong>? Your library,
+          loans, and friendships will all be removed. This can’t be undone.
+        </p>
+      </ConfirmDialog>
     </main>
   );
 }

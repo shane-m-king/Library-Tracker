@@ -3,6 +3,7 @@ import { searchBooks } from '../api/books.js';
 import { addBook } from '../api/library.js';
 import { ApiError, getErrorMessage } from '../api/apiFetch.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+import Button from './Button.jsx';
 import styles from './BookSearch.module.css';
 
 // The shortest query we'll search for. One or two stray characters match half of
@@ -174,33 +175,29 @@ export default function BookSearch({ onAdded, onSelect }) {
                 <div className={styles.actions}>
                   {onSelect ? (
                     // Select mode: hand the chosen book to the caller (the loan form).
-                    <button
-                      type="button"
-                      className={styles.addButton}
-                      onClick={() => onSelect(book)}
-                    >
+                    <Button variant="primary" size="sm" onClick={() => onSelect(book)}>
                       Select
-                    </button>
+                    </Button>
                   ) : add?.phase === 'added' ? (
                     <span className={styles.added}>✓ Added to {add.addedAs}</span>
                   ) : (
                     <>
-                      <button
-                        type="button"
-                        className={styles.addButton}
+                      <Button
+                        variant="primary"
+                        size="sm"
                         disabled={add?.phase === 'adding'}
                         onClick={() => handleAdd(book, 'owned')}
                       >
                         {add?.phase === 'adding' ? 'Adding…' : 'Add as owned'}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.addButtonSecondary}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         disabled={add?.phase === 'adding'}
                         onClick={() => handleAdd(book, 'wishlist')}
                       >
                         Wishlist
-                      </button>
+                      </Button>
                     </>
                   )}
                   {!onSelect && add?.phase === 'error' && (

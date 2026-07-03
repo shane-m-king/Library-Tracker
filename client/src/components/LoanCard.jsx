@@ -1,4 +1,5 @@
 import { todayIso, formatDate } from '../lib/dates.js';
+import Button from './Button.jsx';
 import styles from './LoanCard.module.css';
 
 // One loan in a list: cover, the book's identity, who it's with, the relevant dates,
@@ -80,23 +81,19 @@ export default function LoanCard({ loan, onMarkReturned, onEdit, onDelete }) {
         {(onMarkReturned || onEdit || onDelete) && (
           <div className={styles.cardActions}>
             {active && onMarkReturned && (
-              <button
-                type="button"
-                className={styles.returnButton}
-                onClick={() => onMarkReturned(loan)}
-              >
+              <Button variant="primary" size="xs" onClick={() => onMarkReturned(loan)}>
                 Mark returned
-              </button>
+              </Button>
             )}
             {onEdit && (
-              <button type="button" className={styles.editButton} onClick={() => onEdit(loan)}>
+              <Button variant="secondary" size="xs" onClick={() => onEdit(loan)}>
                 Edit
-              </button>
+              </Button>
             )}
             {onDelete && (
-              <button type="button" className={styles.removeButton} onClick={() => onDelete(loan)}>
+              <Button variant="dangerOutline" size="xs" onClick={() => onDelete(loan)}>
                 Remove
-              </button>
+              </Button>
             )}
           </div>
         )}
