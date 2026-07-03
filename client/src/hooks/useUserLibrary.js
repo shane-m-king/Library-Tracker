@@ -10,8 +10,10 @@ import { useApiResource } from './useApiResource.js';
 // returns a { blocked: visibility } marker, leaving `error` for genuine failures.
 //
 // Returns { items, blockedVisibility, loading, error, refetch } where
-// blockedVisibility is 'friends' | 'private' when blocked, else null.
-export function useUserLibrary(userId, { status } = {}) {
+// blockedVisibility is 'friends' | 'private' when blocked, else null. `enabled`
+// (default true) gates the fetch - the page passes false until it has confirmed the
+// user exists, so we don't fire a doomed library request while the profile 404s.
+export function useUserLibrary(userId, { status, enabled = true } = {}) {
   const fetcher = useCallback(async () => {
     try {
       const { items } = await getUserLibrary(userId, { status });
@@ -26,7 +28,11 @@ export function useUserLibrary(userId, { status } = {}) {
     }
   }, [userId, status]);
 
-  const { data, loading, error, refetch } = useApiResource(fetcher, 'Could not load this library.');
+  const { data, loading, error, refetch } = useApiResource(
+    fetcher,
+    'Could not load this library.',
+    { enabled }
+  );
 
   return {
     items: data?.items ?? [],

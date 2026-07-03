@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLibrary } from '../hooks/useLibrary.js';
 import { useLoans } from '../hooks/useLoans.js';
@@ -51,6 +51,16 @@ export default function LibraryPage() {
   // so the tone stops an error from being styled - and announced - as a success.
   const [notice, setNotice] = useState(null);
   const showNotice = (text, tone = 'success') => setNotice({ text, tone });
+  // Which loans view (current/history) LoansSection shows. Lifted here so a mutation
+  // that produces a now-ACTIVE loan - recording one, or un-returning one from History
+  // - can snap the toggle back to Current; otherwise the result lands in a view the
+  // user isn't looking at and appears to vanish.
+  const [loansView, setLoansView] = useState('current');
+
+  // The page heading, used as the focus-return target for the delete confirmations:
+  // their trigger (a card's Remove button) is removed by the refetch after a delete,
+  // so we send focus here - a stable landmark - instead of letting it fall to <body>.
+  const headingRef = useRef(null);
 
   // Re-pull the affected lists after a mutation that ALREADY succeeded on the
   // server. Kept separate from each mutation's own error handling: the write went
@@ -110,6 +120,8 @@ export default function LibraryPage() {
   // there's no library refetch here.
   function handleLoanCreated(loan) {
     setIsRecordLoanOpen(false);
+    // A newly recorded loan is always active, so make sure Current is showing.
+    setLoansView('current');
     showNotice(
       loan.direction === 'lent_out'
         ? `Lent “${loan.book.title}” to ${loan.counterpartyName}.`
@@ -130,9 +142,13 @@ export default function LibraryPage() {
     }
   }
 
-  // After a loan edit succeeds: close the modal and refresh the loans section.
-  function handleLoanSaved() {
+  // After a loan edit succeeds: close the modal and refresh the loans section. If the
+  // edit un-returned the loan (it's now active), snap to Current so the reopened loan
+  // is visible; a still-returned loan (e.g. a notes-only edit from History) leaves the
+  // view alone so the edited row stays put.
+  function handleLoanSaved(updatedLoan) {
     setEditingLoan(null);
+    if (updatedLoan?.active) setLoansView('current');
     refreshAfterChange(refetchLoans);
   }
 
@@ -183,7 +199,9 @@ export default function LibraryPage() {
   return (
     <main className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Your library</h1>
+        <h1 className={styles.title} tabIndex={-1} ref={headingRef}>
+          Your library
+        </h1>
         <div className={styles.headerActions}>
           <button
             type="button"
@@ -282,6 +300,8 @@ export default function LibraryPage() {
         loans={loans}
         loading={loansLoading}
         error={loansError}
+        view={loansView}
+        onViewChange={setLoansView}
         onRetry={() => refetchLoans().catch(() => {})}
         onRecordLoan={() => setIsRecordLoanOpen(true)}
         onMarkReturned={handleMarkReturned}
@@ -325,6 +345,7 @@ export default function LibraryPage() {
         isOpen={deletingLoan !== null}
         onClose={closeLoanDeleteModal}
         title="Remove loan"
+        returnFocusRef={headingRef}
       >
         {deletingLoan && (
           <div className={styles.confirm}>
@@ -386,6 +407,7 @@ export default function LibraryPage() {
         isOpen={deletingItem !== null}
         onClose={closeDeleteModal}
         title="Remove book"
+        returnFocusRef={headingRef}
       >
         {deletingItem && (
           <div className={styles.confirm}>

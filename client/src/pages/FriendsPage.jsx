@@ -34,8 +34,9 @@ export default function FriendsPage() {
   // A transient banner: { text, tone }, same pattern as LibraryPage.
   const [notice, setNotice] = useState(null);
   const showNotice = (text, tone = 'success') => setNotice({ text, tone });
-  // The friendship id whose action is in flight, so just that row's buttons disable.
-  const [busyId, setBusyId] = useState(null);
+  // The set of friendship ids whose action is in flight, so each acting row's buttons
+  // disable independently (acting on one row never disables another).
+  const [busyIds, setBusyIds] = useState(() => new Set());
 
   // Pending requests split by direction (one fetch, partitioned in memory):
   // incoming = waiting on you (accept/decline), outgoing = sent by you (cancel).
@@ -48,7 +49,7 @@ export default function FriendsPage() {
   // server's message) from a refresh failure (the action DID happen - just warn the
   // view is stale), so we never mislabel one as the other.
   async function act(id, mutate, successText, refetchers) {
-    setBusyId(id);
+    setBusyIds((prev) => new Set(prev).add(id));
     let acted = false;
     try {
       await mutate();
@@ -63,7 +64,11 @@ export default function FriendsPage() {
         'error'
       );
     } finally {
-      setBusyId(null);
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
@@ -141,7 +146,7 @@ export default function FriendsPage() {
                       <button
                         type="button"
                         className={styles.primaryAction}
-                        disabled={busyId === req.id}
+                        disabled={busyIds.has(req.id)}
                         onClick={() => handleAccept(req)}
                       >
                         Accept
@@ -149,7 +154,7 @@ export default function FriendsPage() {
                       <button
                         type="button"
                         className={styles.secondaryAction}
-                        disabled={busyId === req.id}
+                        disabled={busyIds.has(req.id)}
                         onClick={() => handleDecline(req)}
                       >
                         Decline
@@ -168,7 +173,7 @@ export default function FriendsPage() {
                       <button
                         type="button"
                         className={styles.secondaryAction}
-                        disabled={busyId === req.id}
+                        disabled={busyIds.has(req.id)}
                         onClick={() => handleCancel(req)}
                       >
                         Cancel
@@ -212,7 +217,7 @@ export default function FriendsPage() {
                 <button
                   type="button"
                   className={styles.secondaryAction}
-                  disabled={busyId === friend.id}
+                  disabled={busyIds.has(friend.id)}
                   onClick={() => handleUnfriend(friend)}
                 >
                   Unfriend

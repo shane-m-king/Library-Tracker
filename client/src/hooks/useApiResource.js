@@ -24,7 +24,11 @@ import { getErrorMessage } from '../api/apiFetch.js';
 // deps: it's the single dependency this hook keys its reload on, which keeps the
 // params' exhaustive-deps check where the params actually live - in the caller.
 // `errorMessage` is the fallback shown when a failure carries no message of its own.
-export function useApiResource(fetcher, errorMessage) {
+// `options.enabled` (default true) gates the automatic fetch: pass false to hold off
+// until a precondition is met (e.g. don't fetch a user's library until we've
+// confirmed the user exists), then flip it true to fetch. `refetch()` still fetches
+// regardless, so a caller can trigger one by hand even while disabled.
+export function useApiResource(fetcher, errorMessage, { enabled = true } = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,11 +55,12 @@ export function useApiResource(fetcher, errorMessage) {
   }, [fetcher, errorMessage]);
 
   useEffect(() => {
+    if (!enabled) return; // held off until the caller's precondition is met
     // The failure is already recorded in `error`, so swallow the rejection here to
     // keep the initial load from raising an unhandled rejection. (A manual refetch's
     // caller handles its own rejection.)
     load().catch(() => {});
-  }, [load]);
+  }, [load, enabled]);
 
   return { data, loading, error, refetch: load };
 }

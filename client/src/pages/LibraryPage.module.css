@@ -21,6 +21,14 @@
   margin: 0;
 }
 
+/* The heading doubles as the focus-return target after a delete (see LibraryPage).
+   It's a non-interactive landing spot, so suppress the focus ring - the a11y value
+   is the screen-reader announcement and focus reset, not a visible outline on the
+   big heading (which would read as a glitch to sighted users). */
+.title:focus {
+  outline: none;
+}
+
 .headerActions {
   display: flex;
   align-items: center;

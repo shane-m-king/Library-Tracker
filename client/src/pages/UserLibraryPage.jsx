@@ -22,8 +22,12 @@ export default function UserLibraryPage() {
   const { user, loading: userLoading, error: userError } = useUser(id);
 
   const [filter, setFilter] = useState('all');
+  // Hold off the library fetch until we've confirmed the user exists, so a bad id
+  // (profile 404) doesn't also fire a doomed library request. Once `user` loads,
+  // this flips true and the library loads.
   const { items, blockedVisibility, loading, error, refetch } = useUserLibrary(id, {
     status: filter === 'all' ? undefined : filter,
+    enabled: !!user,
   });
 
   // Gate on the profile first: until we know whose library this is (and that they

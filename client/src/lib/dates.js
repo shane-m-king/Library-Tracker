@@ -14,3 +14,23 @@ export function todayIso() {
   const localMs = now.getTime() - now.getTimezoneOffset() * 60000;
   return new Date(localMs).toISOString().slice(0, 10);
 }
+
+// Format a plain 'YYYY-MM-DD' string for display, e.g. "Jun 27, 2026". This is for
+// DISPLAY ONLY - comparisons (like the overdue check) stay on the raw string, which
+// sorts correctly and needs no parsing.
+//
+// We split the parts and build a LOCAL date via new Date(y, m-1, d) rather than
+// new Date('2026-06-27'), which JS parses as UTC midnight and would render as the
+// day before for anyone west of UTC (the same timezone trap todayIso avoids).
+// Returns '' for a null/blank value and the original string if it isn't a plain
+// date, so callers can drop the result straight into JSX without guarding.
+export function formatDate(iso) {
+  if (!iso) return '';
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) return iso;
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}

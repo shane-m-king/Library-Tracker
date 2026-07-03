@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import LoanCard from './LoanCard.jsx';
 import styles from './LoansSection.module.css';
 
@@ -21,21 +20,28 @@ const VIEWS = [
 //     switching is instant - we already hold every loan;
 //   - within the chosen view, two labelled groups: Lent out and Borrowed.
 //
-// Props: loans, loading, error, onRetry (re-run the fetch after a failed load),
-// onRecordLoan (open the record-a-loan modal), and the per-card actions
-// onMarkReturned / onEditLoan / onDeleteLoan (passed straight through to each card).
+// The current/history toggle is CONTROLLED by the parent (`view` + `onViewChange`)
+// rather than held locally, so a mutation on LibraryPage that produces a now-active
+// loan (recording one, or un-returning one) can snap the view back to Current -
+// otherwise the result would land in a view the user isn't looking at and seem to
+// vanish.
+//
+// Props: loans, loading, error, view ('current' | 'history'), onViewChange(view),
+// onRetry (re-run the fetch after a failed load), onRecordLoan (open the record-a-loan
+// modal), and the per-card actions onMarkReturned / onEditLoan / onDeleteLoan (passed
+// straight through to each card).
 export default function LoansSection({
   loans,
   loading,
   error,
+  view,
+  onViewChange,
   onRetry,
   onRecordLoan,
   onMarkReturned,
   onEditLoan,
   onDeleteLoan,
 }) {
-  const [view, setView] = useState('current');
-
   // Slice by the chosen view first (active vs returned), then by direction. Computed
   // unconditionally - harmless on an empty list - so the render branches stay simple.
   const visible = loans.filter((loan) => (view === 'current' ? loan.active : !loan.active));
@@ -74,7 +80,7 @@ export default function LoansSection({
                       type="button"
                       className={`${styles.viewButton} ${view === key ? styles.viewButtonActive : ''}`}
                       aria-pressed={view === key}
-                      onClick={() => setView(key)}
+                      onClick={() => onViewChange(key)}
                     >
                       {label}
                     </button>

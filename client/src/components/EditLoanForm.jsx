@@ -14,7 +14,9 @@ import styles from './EditLoanForm.module.css';
 //     or clear it to reopen an active loan. (The card's one-click "Mark returned" is
 //     the quick path; this is for corrections.)
 //
-// Props: loan (the entry to edit), onSaved(), onCancel.
+// Props: loan (the entry to edit), onSaved(updatedLoan), onCancel. onSaved receives
+// the saved loan so the caller can react to its new state (e.g. show the Current
+// loans view when an edit un-returns a loan).
 export default function EditLoanForm({ loan, onSaved, onCancel }) {
   // Controlled inputs need strings, so nulls become '' (an empty field). On save we
   // map '' back to null where the column is nullable.
@@ -57,8 +59,8 @@ export default function EditLoanForm({ loan, onSaved, onCancel }) {
     setSubmitting(true);
     setError(null);
     try {
-      await updateLoan(loan.id, changes);
-      onSaved();
+      const { item } = await updateLoan(loan.id, changes);
+      onSaved(item);
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save changes.'));
       setSubmitting(false);

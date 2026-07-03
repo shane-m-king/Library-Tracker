@@ -1,4 +1,4 @@
-import { todayIso } from '../lib/dates.js';
+import { todayIso, formatDate } from '../lib/dates.js';
 import styles from './LoanCard.module.css';
 
 // One loan in a list: cover, the book's identity, who it's with, the relevant dates,
@@ -68,11 +68,11 @@ export default function LoanCard({ loan, onMarkReturned, onEdit, onDelete }) {
         </div>
 
         <div className={styles.dates}>
-          <span>Loaned {loanedOn}</span>
+          <span>Loaned {formatDate(loanedOn)}</span>
           {dueDate && (
-            <span className={overdue ? styles.overdueText : undefined}>Due {dueDate}</span>
+            <span className={overdue ? styles.overdueText : undefined}>Due {formatDate(dueDate)}</span>
           )}
-          {returnedOn && <span>Returned {returnedOn}</span>}
+          {returnedOn && <span>Returned {formatDate(returnedOn)}</span>}
         </div>
 
         {notes && <p className={styles.notes}>{notes}</p>}
