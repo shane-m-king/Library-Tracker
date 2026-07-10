@@ -36,7 +36,7 @@
 }
 
 .sent {
-  color: #15803d;
+  color: var(--status-success-text);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;

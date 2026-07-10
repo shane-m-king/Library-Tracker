@@ -75,13 +75,13 @@
 }
 
 .badgeOwned {
-  background: #e7f0ff;
-  color: #1d4ed8;
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
 }
 
 .badgeWishlist {
-  background: #f1edff;
-  color: #6d28d9;
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
 }
 
 .rating {

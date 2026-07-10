@@ -40,7 +40,7 @@
 .primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .primary:hover:not(:disabled) {
   background: var(--color-accent-hover);
@@ -59,7 +59,7 @@
 .danger {
   background: var(--color-danger);
   border-color: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 .danger:hover:not(:disabled) {
   opacity: 0.9;

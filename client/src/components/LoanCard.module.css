@@ -84,29 +84,29 @@
 
 /* Direction. */
 .badgeLent {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
 }
 
 .badgeBorrowed {
-  background: #cffafe;
-  color: #0e7490;
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
 }
 
 /* Status. */
 .badgeActive {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
 }
 
 .badgeReturned {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
 }
 
 .badgeOverdue {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
 }
 
 /* The loaned / due / returned dates, laid out as a wrapping row of small muted

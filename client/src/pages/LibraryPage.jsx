@@ -7,6 +7,7 @@ import { updateLoan, deleteLoan } from '../api/loans.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import { todayIso } from '../lib/dates.js';
 import LibraryItemCard from '../components/LibraryItemCard.jsx';
+import CardGrid from '../components/CardGrid.jsx';
 import LoansSection from '../components/LoansSection.jsx';
 import Button from '../components/Button.jsx';
 import Notice from '../components/Notice.jsx';
@@ -240,7 +241,7 @@ export default function LibraryPage() {
           )}
         </p>
       ) : (
-        <ul className={styles.grid}>
+        <CardGrid>
           {items.map((item) => (
             <LibraryItemCard
               key={item.id}
@@ -249,7 +250,7 @@ export default function LibraryPage() {
               onDelete={setDeletingItem}
             />
           ))}
-        </ul>
+        </CardGrid>
       )}
 
       {/* Borrowed & lent-out books, below the library proper. */}

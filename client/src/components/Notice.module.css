@@ -10,14 +10,14 @@
   margin-bottom: 16px;
   padding: 10px 14px;
   border-radius: var(--radius);
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
+  background: var(--status-success-bg);
+  border: 1px solid var(--status-success-bg);
+  color: var(--status-success-text);
   font-size: 14px;
 }
 
 .error {
-  background: #fdecec;
+  background: var(--color-danger-surface);
   border-color: var(--color-danger);
   color: var(--color-danger);
 }

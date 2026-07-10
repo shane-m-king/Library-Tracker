@@ -1,4 +1,5 @@
 import LoanCard from './LoanCard.jsx';
+import CardGrid from './CardGrid.jsx';
 import Button from './Button.jsx';
 import ToggleGroup from './ToggleGroup.jsx';
 import styles from './LoansSection.module.css';
@@ -127,7 +128,7 @@ function LoanGroup({ title, loans, emptyText, onMarkReturned, onEdit, onDelete }
       {loans.length === 0 ? (
         <p className={styles.empty}>{emptyText}</p>
       ) : (
-        <ul className={styles.grid}>
+        <CardGrid>
           {loans.map((loan) => (
             <LoanCard
               key={loan.id}
@@ -137,7 +138,7 @@ function LoanGroup({ title, loans, emptyText, onMarkReturned, onEdit, onDelete }
               onDelete={onDelete}
             />
           ))}
-        </ul>
+        </CardGrid>
       )}
     </div>
   );

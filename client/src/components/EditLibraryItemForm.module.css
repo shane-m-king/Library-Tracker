@@ -11,9 +11,9 @@
   margin: 0;
   padding: 12px;
   border-radius: var(--radius);
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  color: #9a3412;
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-bg);
+  color: var(--status-warning-text);
   font-size: 14px;
 }
 

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useUser } from '../hooks/useUser.js';
 import { useUserLibrary } from '../hooks/useUserLibrary.js';
 import LibraryItemCard from '../components/LibraryItemCard.jsx';
+import CardGrid from '../components/CardGrid.jsx';
 import Button from '../components/Button.jsx';
 import ToggleGroup from '../components/ToggleGroup.jsx';
 import { LIBRARY_FILTERS } from '../lib/libraryFilters.js';
@@ -96,12 +97,12 @@ export default function UserLibraryPage() {
                 : `No ${filter} books.`}
             </p>
           ) : (
-            <ul className={styles.grid}>
+            <CardGrid>
               {items.map((item) => (
                 // No onEdit/onDelete -> the card renders read-only.
                 <LibraryItemCard key={item.id} item={item} />
               ))}
-            </ul>
+            </CardGrid>
           )}
         </>
       )}

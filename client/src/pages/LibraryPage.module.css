@@ -59,16 +59,3 @@
   color: var(--color-danger);
   margin: 0 0 16px;
 }
-
-
-/* Responsive grid: as many ~280px columns as fit, then wrap. auto-fill keeps the
-   card width steady and just changes how many sit per row. The list-style reset
-   removes the <ul>/<li> bullets since these are cards, not a bulleted list. */
-.grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}

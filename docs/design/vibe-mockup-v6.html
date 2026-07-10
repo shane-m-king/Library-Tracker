@@ -1,0 +1,433 @@
+<style>
+  /* ============================================================
+     LIBRARY — vibe mockup v6 (8j-0)
+     The cabin background, properly implemented this time. The v2–v4
+     bug: a blanket `.room > * { position:relative; z-index:2 }` rule
+     overrode `position:fixed` on the scene layers and collapsed them —
+     so the "cabin" never rendered. Fix is structural: the app chrome
+     lives in its own `.app` wrapper (the only thing lifted to z-index 2);
+     the scene layers are never touched by a blanket selector.
+     Bookcase itself is unchanged from v5.1 (aligned books, twin candles).
+     ============================================================ */
+  :root {
+    --ink-950:#1a120b;
+    --parch:#efe3d0; --parch-dim:#d4c3a8; --muted:#a8926f;
+    --ember:#e8863b; --brass:#c9a35a;
+    --leaf:#4a7a4f; --leaf-lo:#335639;
+    --line:rgba(201,163,90,.2);
+    --serif:"Iowan Old Style","Palatino Linotype","Palatino","Book Antiqua",Georgia,serif;
+    --sans:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  * { box-sizing:border-box; }
+
+  .room { position:relative; min-height:100vh; overflow:hidden;
+          color:var(--parch); font-family:var(--sans);
+          background:#3a2b16; }
+
+  /* ============================ THE CABIN ============================ */
+  /* Layer 0 — the wall & floor. Crisp (a wall isn't out of focus). */
+  .scene { position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      /* firelight wash from the hearth, lower-left */
+      radial-gradient(85% 72% at 10% 80%, rgba(248,176,88,.38), transparent 55%),
+      /* soft warm ambient from above-right */
+      radial-gradient(70% 50% at 85% 0%, rgba(201,163,90,.14), transparent 60%),
+      /* gentle vignette — mild, the room stays legible */
+      radial-gradient(130% 120% at 50% 45%, transparent 74%, rgba(0,0,0,.26)),
+      /* horizontal log-cabin planks with grain */
+      repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 2px, transparent 2px 88px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.03) 0 3px, transparent 3px 9px),
+      linear-gradient(180deg, #57432a 0%, #4a3720 60%, #3a2b16 100%); }
+
+  /* the floor: a darker band with its own plank direction + a seam shadow */
+  .floor { position:fixed; left:0; right:0; bottom:0; height:12vh; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(40% 90% at 12% 0%, rgba(232,134,59,.22), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 2px, transparent 2px 64px),
+      linear-gradient(180deg, #2c1f0f, #201607);
+    box-shadow:0 -8px 18px -6px rgba(0,0,0,.55); }
+
+  /* Layer 1 — out-of-focus furniture. Blurred: it's the back of the room. */
+  .backdrop { position:fixed; inset:0; z-index:1; pointer-events:none; filter:blur(4px); }
+
+  /* fireplace, lower-left */
+  .fireplace { position:absolute; left:1%; bottom:9vh; width:380px; height:400px; }
+  .mantel { position:absolute; top:46px; left:-20px; right:-20px; height:30px; border-radius:5px;
+            background:linear-gradient(180deg,#7a5632,#42301c); box-shadow:0 10px 18px rgba(0,0,0,.45); }
+  .surround { position:absolute; top:76px; bottom:0; left:22px; right:22px; border-radius:8px 8px 0 0;
+              /* brick courses */
+              background:
+                repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 2px, transparent 2px 24px),
+                repeating-linear-gradient(90deg, rgba(0,0,0,.10) 0 2px, transparent 2px 42px),
+                linear-gradient(180deg,#6e4936,#4e3223);
+              box-shadow:inset 0 0 0 2px rgba(0,0,0,.3); }
+  .firebox { position:absolute; bottom:0; left:60px; right:60px; top:120px; border-radius:14px 14px 0 0;
+             background:radial-gradient(120% 90% at 50% 100%, #2a1608, #120904);
+             box-shadow:inset 0 0 50px rgba(0,0,0,.8), 0 0 0 10px #3a2415; }
+  .logs { position:absolute; bottom:14px; left:50%; width:140px; height:18px; transform:translateX(-50%);
+          background:linear-gradient(90deg,#5a3a20,#3a2512); border-radius:9px; box-shadow:0 6px 8px rgba(0,0,0,.5); }
+  .fire { position:absolute; left:50%; bottom:18px; width:160px; height:190px; transform:translateX(-50%);
+          background:radial-gradient(50% 60% at 50% 74%, #ffe6ad, #f8ac46 38%, rgba(245,172,92,.28) 66%, transparent 78%);
+          filter:blur(2px); animation:fire 3.4s ease-in-out infinite; }
+  @keyframes fire { 0%,100%{transform:translateX(-50%) scaleY(1);opacity:.96} 50%{transform:translateX(-50%) scaleY(1.09);opacity:1} }
+  /* things on the mantel: a small clock and two tiny books */
+  .clock { position:absolute; top:16px; left:56px; width:30px; height:30px; border-radius:50%;
+           background:radial-gradient(circle at 40% 35%, #efe3d0, #c8b394 70%);
+           box-shadow:0 0 0 4px #4a3320, 0 4px 8px rgba(0,0,0,.5); }
+  .mini { position:absolute; top:14px; width:9px; height:32px; border-radius:2px; }
+
+  /* the window, upper right — deep dusk outside, warm room inside */
+  .window { position:absolute; top:84px; right:14%; width:150px; height:196px; border-radius:6px;
+            background:
+              radial-gradient(40% 30% at 30% 22%, rgba(230,235,255,.5), transparent 55%),
+              linear-gradient(180deg,#2c3a58 0%, #1d2740 55%, #141b2e 100%);
+            box-shadow:0 0 0 10px #5a4026, 0 0 0 13px #33230f, inset 0 0 26px rgba(0,0,0,.45),
+                       0 18px 30px -12px rgba(0,0,0,.55); }
+  .window::before { content:""; position:absolute; inset:0;
+            background:
+              linear-gradient(90deg, transparent calc(50% - 4px), #4a3320 calc(50% - 4px) calc(50% + 4px), transparent calc(50% + 4px)),
+              linear-gradient(0deg,  transparent calc(50% - 4px), #4a3320 calc(50% - 4px) calc(50% + 4px), transparent calc(50% + 4px)); }
+
+  /* hanging plant, top right, trailing beside the window */
+  .hanging { position:absolute; top:-8px; right:3%; width:150px; height:230px; }
+  .vine { position:absolute; top:0; width:5px; background:linear-gradient(180deg,#557a55,transparent); border-radius:2px; }
+  .hleaf { position:absolute; width:30px; height:18px; background:linear-gradient(120deg,var(--leaf),var(--leaf-lo)); border-radius:0 100% 0 100%; }
+
+  /* rug on the floor by the hearth */
+  .rug { position:absolute; bottom:3vh; left:4%; width:380px; height:62px; border-radius:50%;
+         background:radial-gradient(ellipse at 50% 50%, #82412f, #5c2b20 72%);
+         box-shadow:inset 0 0 0 7px rgba(201,163,90,.22); opacity:.9; }
+
+  /* crisp firelight flicker over everything ambient (not blurred) */
+  .hearth-glow { position:fixed; left:-6%; bottom:-10%; width:44vw; height:44vw; max-width:600px; max-height:600px;
+                 z-index:1; pointer-events:none;
+                 background:radial-gradient(circle, rgba(240,150,60,.20), transparent 62%);
+                 filter:blur(10px); animation:flicker 6s ease-in-out infinite; }
+  @keyframes flicker { 0%,100%{opacity:.8;transform:scale(1)} 45%{opacity:1;transform:scale(1.05)} 70%{opacity:.72;transform:scale(.99)} }
+  @media (prefers-reduced-motion:reduce){ .fire,.hearth-glow{animation:none;} }
+
+  /* ============================ APP CHROME ============================ */
+  /* the ONLY thing lifted above the scene — no blanket child selectors */
+  .app { position:relative; z-index:2; }
+
+  .topbar { display:flex; align-items:center; gap:32px; padding:18px clamp(20px,5vw,56px);
+            background:linear-gradient(180deg, rgba(20,12,6,.62), rgba(20,12,6,.08));
+            backdrop-filter:blur(2px);
+            border-bottom:1px solid var(--line); }
+  .brand { display:flex; align-items:center; gap:12px; margin-right:auto; }
+  .mark { display:grid; place-items:center; width:34px; height:34px; border-radius:50%;
+          background:radial-gradient(circle at 50% 35%, #ffd9a0, var(--ember) 55%, #a24d18);
+          box-shadow:0 0 18px rgba(232,134,59,.55), inset 0 -2px 4px rgba(0,0,0,.3); font-size:17px; }
+  .wordmark { font-family:var(--serif); font-size:22px; } .wordmark b{font-weight:600;} .wordmark span{color:var(--brass);}
+  .nav { display:flex; gap:26px; }
+  .nav a { position:relative; font-size:14px; color:var(--parch-dim); text-decoration:none; padding:4px 0; }
+  .nav a:hover,.nav a.active{ color:var(--parch); }
+  .nav a.active::after{ content:""; position:absolute; left:0; right:0; bottom:-3px; height:2px; border-radius:2px;
+                        background:linear-gradient(90deg,var(--ember),var(--brass)); }
+  .avatar { display:grid; place-items:center; width:36px; height:36px; border-radius:50%;
+            font-family:var(--serif); font-size:15px; color:var(--ink-950);
+            background:linear-gradient(160deg,#e3c584,var(--brass));
+            box-shadow:inset 0 1px 2px rgba(255,255,255,.5), 0 2px 6px rgba(0,0,0,.4); cursor:pointer; }
+
+  main { max-width:1160px; margin:0 auto; padding:0 clamp(20px,5vw,56px); }
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; padding:32px 0 6px; }
+  h1 { font-family:var(--serif); font-size:clamp(28px,4.2vw,42px); font-weight:600; margin:0; line-height:1.05; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .sub { margin:9px 0 0; color:var(--parch-dim); font-size:14px; font-variant-numeric:tabular-nums; text-shadow:0 1px 4px rgba(0,0,0,.6); }
+  .head-actions { display:flex; align-items:center; gap:14px; }
+  .pills { display:flex; gap:6px; padding:4px; border-radius:999px; background:rgba(0,0,0,.34); border:1px solid var(--line); backdrop-filter:blur(2px); }
+  .pill { border:0; cursor:pointer; font-family:var(--sans); font-size:13px; color:var(--parch-dim); background:transparent; padding:7px 15px; border-radius:999px; }
+  .pill.active { color:var(--ink-950); font-weight:600; background:linear-gradient(160deg,#f0a256,var(--ember)); box-shadow:0 1px 8px rgba(232,134,59,.4); }
+  .add { border:1px solid rgba(201,163,90,.5); cursor:pointer; font-family:var(--sans); font-size:14px; font-weight:600; color:var(--parch);
+         background:linear-gradient(180deg, rgba(232,134,59,.3), rgba(232,134,59,.12)); padding:9px 18px; border-radius:4px;
+         display:inline-flex; align-items:center; gap:8px; }
+  .add:hover { background:linear-gradient(180deg, rgba(232,134,59,.42), rgba(232,134,59,.18)); }
+  .add .plus { color:#ffd9a0; font-size:17px; line-height:1; }
+
+  /* ============================ ANTIQUE BOOKCASE (unchanged from v5.1) ============================ */
+  .bookcase { margin:24px auto 56px; max-width:940px;
+              filter:drop-shadow(0 30px 30px rgba(0,0,0,.45)); }
+
+  .crown { height:34px; margin:0 -6px; border-radius:7px 7px 3px 3px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.14), transparent 26%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.16) 0 2px, transparent 2px 11px),
+      linear-gradient(180deg, #6a4a2c 0 40%, #4a3320 60%, #2f2013);
+    box-shadow:0 3px 0 #241710, 0 14px 20px -8px rgba(0,0,0,.6); }
+  .base { height:26px; margin:0 -10px; border-radius:3px 3px 8px 8px;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.18) 0 2px, transparent 2px 12px),
+      linear-gradient(180deg, #4a3320, #2a1c10);
+    box-shadow:0 -2px 0 rgba(201,163,90,.15) inset, 0 26px 34px -18px rgba(0,0,0,.7); }
+
+  .case-body { position:relative; padding:16px 44px 6px;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 1px, transparent 1px 74px),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.05) 0 3px, transparent 3px 7px),
+      linear-gradient(180deg, #2c1e12, #1f150c);
+    box-shadow:inset 0 3px 14px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.45); }
+  .post { position:absolute; top:0; bottom:0; width:34px; z-index:3;
+          background:
+            linear-gradient(90deg, rgba(255,255,255,.14), transparent 34%, rgba(0,0,0,.4)),
+            repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 7px),
+            repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 15px),
+            linear-gradient(180deg, #5f4429, #34240f);
+          box-shadow:inset 0 0 0 1px rgba(0,0,0,.4); }
+  .post.left { left:0; border-radius:2px 5px 5px 2px; }
+  .post.right { right:0; border-radius:5px 2px 2px 5px;
+                background:
+                  linear-gradient(90deg, rgba(0,0,0,.4), transparent 66%, rgba(255,255,255,.12)),
+                  repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 7px),
+                  repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 15px),
+                  linear-gradient(180deg, #5f4429, #34240f); }
+
+  .shelf-unit { position:relative; }
+  /* 3-column grid: books centered independently of end decor, so the
+     top & bottom rows align exactly. Decor tucks toward the books. */
+  .books { display:grid; grid-template-columns:1fr auto 1fr; align-items:end;
+           column-gap:clamp(10px,2vw,30px); padding:0 clamp(18px,3.5vw,42px); min-height:212px; }
+  .stack { display:flex; align-items:flex-end; gap:clamp(9px,1.6vw,18px); }
+  .end { display:flex; align-items:flex-end; gap:10px; }
+  .end.twin { gap:0; }
+  .end.twin .candle.short { margin-left:-10px; }
+  .books > .end:first-child { justify-self:end; }
+  .books > .end:last-child  { justify-self:start; }
+  .board { height:18px; margin:0 6px 30px; border-radius:2px 2px 4px 4px;
+    background:
+      linear-gradient(180deg, #6a4a2c 0 3px, #45301c 3px 60%, #2a1c10),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 2px, transparent 2px 16px);
+    box-shadow:0 1px 0 rgba(201,163,90,.28) inset, 0 16px 22px -12px rgba(0,0,0,.85); }
+  .shelf-unit:last-child .board { margin-bottom:0; }
+
+  .book { position:relative; width:clamp(84px,11.5vw,120px); flex:0 0 auto; }
+  .cover { position:relative; aspect-ratio:2/3; border-radius:2px 4px 4px 2px; overflow:hidden;
+    padding:15px 13px 15px 17px; display:flex; flex-direction:column; cursor:pointer;
+    background:
+      linear-gradient(115deg, rgba(255,255,255,.07), rgba(0,0,0,.18) 62%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 2px, transparent 2px 4px),
+      linear-gradient(180deg,var(--cloth2),var(--cloth));
+    box-shadow:inset 0 0 0 1px rgba(201,163,90,.22), inset 0 0 22px rgba(0,0,0,.42), 0 14px 16px -10px rgba(0,0,0,.85);
+    transform-origin:bottom center; transition:transform .25s ease, box-shadow .25s ease; }
+  .cover::before { content:""; position:absolute; left:0; top:0; bottom:0; width:9px;
+                   background:linear-gradient(90deg, rgba(0,0,0,.5), rgba(255,255,255,.1) 55%, rgba(0,0,0,.22)); }
+  .cover:hover { transform:translateY(-10px);
+    box-shadow:inset 0 0 0 1px rgba(201,163,90,.35), inset 0 0 22px rgba(0,0,0,.36), 0 24px 30px -12px rgba(0,0,0,.9), 0 0 26px rgba(232,134,59,.3); }
+  @media (prefers-reduced-motion:reduce){ .cover{transition:none;} .cover:hover{transform:none;} }
+
+  .band { height:1px; width:36px; margin-bottom:10px; background:linear-gradient(90deg,var(--brass),transparent); }
+  .title { font-family:var(--serif); font-weight:600; font-size:14.5px; line-height:1.15; margin:0; color:#f6ecdb; text-wrap:balance; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .author { margin:6px 0 0; font-size:10.5px; color:rgba(246,236,219,.72); font-style:italic; }
+  .emblem { margin-top:auto; color:var(--brass); opacity:.75; font-size:15px; }
+
+  .overlay { position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:6px; padding:10px;
+             background:linear-gradient(180deg, transparent, rgba(8,4,2,.94) 44%); transform:translateY(101%); transition:transform .25s ease; }
+  .cover:hover .overlay { transform:translateY(0); }
+  @media (prefers-reduced-motion:reduce){ .overlay{transition:none;} }
+  .copies { font-size:11px; color:var(--parch-dim); margin-right:auto; }
+  .iconbtn { border:1px solid var(--line); background:rgba(0,0,0,.4); color:var(--parch); border-radius:4px; cursor:pointer; font-size:11px; padding:4px 8px; font-family:var(--sans); }
+  .iconbtn:hover { border-color:var(--brass); color:#fff; }
+
+  .ribbon { position:absolute; top:9px; right:-30px; z-index:3; transform:rotate(45deg);
+            background:linear-gradient(180deg,#f0a256,var(--ember)); color:var(--ink-950); font-size:9.5px; font-weight:700;
+            letter-spacing:.5px; text-transform:uppercase; padding:3px 34px; box-shadow:0 2px 6px rgba(0,0,0,.5); }
+
+  .book.ghost .cover { background:repeating-linear-gradient(135deg, rgba(201,163,90,.05) 0 8px, transparent 8px 16px);
+                       border:1.5px dashed rgba(201,163,90,.4); box-shadow:none; }
+  .book.ghost .cover::before { display:none; }
+  .book.ghost .title { color:var(--parch-dim); } .book.ghost .author { color:var(--muted); }
+  .wish { position:absolute; top:12px; left:12px; font-size:9.5px; letter-spacing:.7px; text-transform:uppercase; color:var(--brass); }
+
+  /* ---- bookend decor ---- */
+  .decor { position:relative; flex:0 0 auto; align-self:flex-end; }
+  .plant { width:82px; height:120px; }
+  .pot { position:absolute; bottom:0; left:15px; width:54px; height:42px; background:linear-gradient(180deg,#b5623a,#823e22);
+         border-radius:4px 4px 7px 7px; box-shadow:inset 0 3px 0 rgba(255,255,255,.15), 0 8px 12px -6px rgba(0,0,0,.7); }
+  .pot::before { content:""; position:absolute; top:-5px; left:-5px; right:-5px; height:10px; border-radius:3px; background:linear-gradient(180deg,#c56e44,#9a4d2b); }
+  .pleaf { position:absolute; bottom:36px; left:36px; width:18px; height:58px; background:linear-gradient(180deg,var(--leaf),var(--leaf-lo));
+           border-radius:60% 60% 40% 40%; transform-origin:bottom center; }
+
+  .candle { width:46px; height:116px; }
+  .holder { position:absolute; bottom:0; left:5px; width:36px; height:15px; border-radius:50%/70%;
+            background:linear-gradient(180deg,#e3c584,#9a7a3a); box-shadow:0 6px 10px -5px rgba(0,0,0,.7); }
+  .wax { position:absolute; bottom:11px; left:13px; width:20px; height:82px; border-radius:5px 5px 2px 2px; background:linear-gradient(180deg,#efe3cf,#cdbfa4); }
+  .drip { position:absolute; bottom:11px; left:31px; width:6px; height:26px; border-radius:0 0 6px 6px; background:linear-gradient(180deg,#efe3cf,#cdbfa4); opacity:.9; }
+  .flame { position:absolute; bottom:92px; left:20px; width:9px; height:19px; border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+           background:radial-gradient(50% 60% at 50% 70%, #fff2c0, #f0932e 70%); filter:blur(.4px);
+           box-shadow:0 0 20px 6px rgba(240,147,46,.6); animation:candle 2.6s ease-in-out infinite; }
+  .candle.short { height:92px; }
+  .candle.short .wax { height:58px; }
+  .candle.short .drip { height:18px; }
+  .candle.short .flame { bottom:68px; }
+  @keyframes candle { 0%,100%{transform:scaleY(1) translateX(0)} 50%{transform:scaleY(1.12) translateX(1px)} }
+  @media (prefers-reduced-motion:reduce){ .flame{animation:none;} }
+
+  .note { max-width:1160px; margin:0 auto; padding:22px clamp(20px,5vw,56px) 40px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px; line-height:1.6; }
+  .note b { color:var(--parch-dim); font-weight:600; }
+</style>
+
+<div class="room">
+  <!-- Layer 0: wall & floor (crisp) -->
+  <div class="scene"></div>
+  <div class="floor"></div>
+
+  <!-- Layer 1: out-of-focus cabin furniture -->
+  <div class="backdrop">
+    <div class="fireplace">
+      <div class="mantel"></div>
+      <div class="clock"></div>
+      <div class="mini" style="left:250px; background:linear-gradient(180deg,#6b2f24,#4c2018);"></div>
+      <div class="mini" style="left:262px; top:18px; height:28px; background:linear-gradient(180deg,#2c4a44,#1d332f);"></div>
+      <div class="surround"></div>
+      <div class="firebox"></div>
+      <div class="logs"></div>
+      <div class="fire"></div>
+    </div>
+    <div class="window"></div>
+    <div class="hanging">
+      <div class="vine" style="left:36px; height:130px;"></div>
+      <div class="vine" style="left:80px; height:186px;"></div>
+      <div class="vine" style="left:122px; height:104px;"></div>
+      <div class="hleaf" style="left:24px; top:56px; transform:rotate(30deg);"></div>
+      <div class="hleaf" style="left:46px; top:106px; transform:rotate(-20deg);"></div>
+      <div class="hleaf" style="left:70px; top:78px; transform:rotate(40deg);"></div>
+      <div class="hleaf" style="left:92px; top:166px; transform:rotate(-30deg);"></div>
+      <div class="hleaf" style="left:114px; top:68px; transform:rotate(25deg);"></div>
+      <div class="hleaf" style="left:130px; top:118px; transform:rotate(-15deg);"></div>
+    </div>
+    <div class="rug"></div>
+  </div>
+
+  <!-- crisp ambient firelight over the scene -->
+  <div class="hearth-glow"></div>
+
+  <!-- Layer 2: the app -->
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark">🔥</span>
+        <span class="wordmark"><b>Hearth</b> <span>·</span> library</span>
+      </div>
+      <nav class="nav">
+        <a href="#" class="active">My Library</a>
+        <a href="#">Friends</a>
+      </nav>
+      <div class="avatar" title="Shane King">SK</div>
+    </header>
+
+    <main>
+      <div class="page-head">
+        <div>
+          <h1>My Library</h1>
+          <p class="sub">26 volumes on the shelves · 2 out on loan</p>
+        </div>
+        <div class="head-actions">
+          <div class="pills">
+            <button class="pill active">All</button>
+            <button class="pill">Owned</button>
+            <button class="pill">Wishlist</button>
+          </div>
+          <button class="add"><span class="plus">＋</span> Add a book</button>
+        </div>
+      </div>
+
+      <div class="bookcase">
+        <div class="crown"></div>
+        <div class="case-body">
+          <span class="post left"></span>
+          <span class="post right"></span>
+
+          <!-- shelf 1: plant | books | two candles (base-to-base) -->
+          <div class="shelf-unit">
+            <div class="books">
+              <div class="end">
+                <div class="decor plant">
+                  <div class="pleaf" style="transform:rotate(-34deg);"></div>
+                  <div class="pleaf" style="transform:rotate(-12deg);"></div>
+                  <div class="pleaf" style="transform:rotate(12deg);"></div>
+                  <div class="pleaf" style="transform:rotate(34deg);"></div>
+                  <div class="pot"></div>
+                </div>
+              </div>
+              <div class="stack">
+                <article class="book" style="--cloth:#26402e;--cloth2:#345539;">
+                  <div class="cover"><span class="band"></span><h3 class="title">The Wind in the Willows</h3><p class="author">Kenneth Grahame</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">1 copy</span><button class="iconbtn">Lend</button><button class="iconbtn">Edit</button></div></div>
+                </article>
+                <article class="book" style="--cloth:#5c241d;--cloth2:#7a3229;">
+                  <span class="ribbon">Lent</span>
+                  <div class="cover"><span class="band"></span><h3 class="title">Jane Eyre</h3><p class="author">Charlotte Brontë</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">out · Sarah</span><button class="iconbtn">Details</button></div></div>
+                </article>
+                <article class="book" style="--cloth:#7a5a1c;--cloth2:#9a7526;">
+                  <div class="cover"><span class="band"></span><h3 class="title">The Hobbit</h3><p class="author">J. R. R. Tolkien</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">2 copies</span><button class="iconbtn">Lend</button><button class="iconbtn">Edit</button></div></div>
+                </article>
+                <article class="book" style="--cloth:#1f2c44;--cloth2:#2b3d5c;">
+                  <div class="cover"><span class="band"></span><h3 class="title">Moby-Dick</h3><p class="author">Herman Melville</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">1 copy</span><button class="iconbtn">Lend</button><button class="iconbtn">Edit</button></div></div>
+                </article>
+              </div>
+              <div class="end twin">
+                <div class="decor candle">
+                  <div class="flame"></div><div class="drip"></div><div class="wax"></div><div class="holder"></div>
+                </div>
+                <div class="decor candle short">
+                  <div class="flame"></div><div class="drip"></div><div class="wax"></div><div class="holder"></div>
+                </div>
+              </div>
+            </div>
+            <div class="board"></div>
+          </div>
+
+          <!-- shelf 2: candle | books | plant -->
+          <div class="shelf-unit">
+            <div class="books">
+              <div class="end">
+                <div class="decor candle">
+                  <div class="flame"></div><div class="drip"></div><div class="wax"></div><div class="holder"></div>
+                </div>
+              </div>
+              <div class="stack">
+                <article class="book" style="--cloth:#4a2740;--cloth2:#5f3453;">
+                  <div class="cover"><span class="band"></span><h3 class="title">Little Women</h3><p class="author">Louisa May Alcott</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">1 copy</span><button class="iconbtn">Lend</button><button class="iconbtn">Edit</button></div></div>
+                </article>
+                <article class="book" style="--cloth:#1d4340;--cloth2:#295c57;">
+                  <div class="cover"><span class="band"></span><h3 class="title">A Wizard of Earthsea</h3><p class="author">Ursula K. Le Guin</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">1 copy</span><button class="iconbtn">Lend</button><button class="iconbtn">Edit</button></div></div>
+                </article>
+                <article class="book" style="--cloth:#3f3a24;--cloth2:#565030;">
+                  <span class="ribbon">Lent</span>
+                  <div class="cover"><span class="band"></span><h3 class="title">The Secret Garden</h3><p class="author">Frances H. Burnett</p><span class="emblem">❧</span>
+                    <div class="overlay"><span class="copies">out · Theo</span><button class="iconbtn">Details</button></div></div>
+                </article>
+                <article class="book ghost">
+                  <div class="cover"><span class="wish">Wishlist</span><span class="band"></span><h3 class="title">The Name of the Wind</h3><p class="author">Patrick Rothfuss</p></div>
+                </article>
+              </div>
+              <div class="end">
+                <div class="decor plant">
+                  <div class="pleaf" style="transform:rotate(-34deg);"></div>
+                  <div class="pleaf" style="transform:rotate(-12deg);"></div>
+                  <div class="pleaf" style="transform:rotate(12deg);"></div>
+                  <div class="pleaf" style="transform:rotate(34deg);"></div>
+                  <div class="pot"></div>
+                </div>
+              </div>
+            </div>
+            <div class="board"></div>
+          </div>
+        </div>
+        <div class="base"></div>
+      </div>
+    </main>
+
+    <p class="note">
+      <b>Mockup v6 — 8j-0.</b> The cabin, actually rendering this time (the v2–v4 layering bug is
+      fixed): log-plank wall, floor line, brick fireplace with mantel clock lower-left, a dusk
+      window and hanging plant upper-right, rug by the hearth — all softly blurred behind the
+      crisp bookcase. Everything remains a CSS stand-in: your blurred cabin photo, real wood
+      texture, and Google Books covers slot in at build time. <b>“Hearth”</b> is still a placeholder name.
+    </p>
+  </div>
+</div>

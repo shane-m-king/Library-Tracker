@@ -3,22 +3,49 @@
    component, so class names are locally scoped and can't collide. */
 
 :root {
-  /* Color tokens */
-  --color-bg: #f7f7f8;
-  --color-surface: #ffffff;
-  --color-border: #e3e3e8;
-  --color-text: #1c1b22;
-  --color-text-muted: #6b6875;
-  --color-accent: #4f46e5;
-  --color-accent-hover: #4338ca;
-  --color-danger: #dc2626;
+  /* ==== Fireside palette ====
+     The locked visual direction (docs/design/vibe-mockup-v6.html): a warm, dim
+     home library lit by the fire. One committed theme - dark warm ground,
+     parchment text, ember accent, brass detail. */
+
+  /* Ground & surfaces */
+  --color-bg: #332614; /* cabin-wall brown */
+  --color-surface: #241a10; /* raised panels: deep walnut */
+  --color-surface-sunken: #1b1209; /* recessed wells: inputs, pill tracks */
+  --color-border: rgba(201, 163, 90, 0.25); /* brass hairline */
+
+  /* Text */
+  --color-text: #efe3d0; /* candlelight parchment */
+  --color-text-muted: #b9a488;
+
+  /* Accent & feedback. Hover glows LIGHTER, not darker - it's firelight. */
+  --color-accent: #e8863b; /* ember */
+  --color-accent-hover: #f09a56;
+  --color-on-accent: #1a120b; /* text on ember/danger fills (light fills, dark text) */
+  --color-danger: #e56a56; /* warm red, light enough to read on the dark ground */
+  --color-danger-surface: rgba(229, 106, 86, 0.14);
+
+  /* Status tints for badges & banners: translucent fills + light text, so they
+     sit on any surface. Semantic, not decorative - each maps to a state:
+     success (done/friends), warning (lent out / caution), info (wishlist /
+     borrowed - the dusk blue), neutral (owned / returned - brass). */
+  --status-success-bg: rgba(74, 122, 79, 0.25);
+  --status-success-text: #a7d3ac;
+  --status-warning-bg: rgba(232, 134, 59, 0.18);
+  --status-warning-text: #f0b27c;
+  --status-info-bg: rgba(93, 128, 180, 0.24);
+  --status-info-text: #aac4ea;
+  --status-neutral-bg: rgba(201, 163, 90, 0.16);
+  --status-neutral-text: #d4c3a8;
 
   /* Spacing / shape tokens */
   --radius: 8px;
   --space: 16px;
   --max-width: 960px;
 
-  --font-sans: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: 'Avenir Next', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
+    serif;
 
   font-family: var(--font-sans);
   line-height: 1.5;
@@ -39,9 +66,11 @@ body {
   min-height: 100vh;
 }
 
+/* Headings carry the bookish voice: serif, like a title page. */
 h1,
 h2,
 h3 {
+  font-family: var(--font-serif);
   line-height: 1.2;
   color: var(--color-text);
 }
