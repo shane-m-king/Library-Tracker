@@ -22,19 +22,20 @@
   margin: 0;
 }
 
-.backLink {
-  color: var(--color-text-muted);
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-/* Each area (requests, friends, find people). */
+/* Each area (requests, friends, find people) is a raised walnut panel - the same
+   surface language as the auth card and profile form, so the page reads as three
+   tidy stations instead of one run-on column. Person rows keep the page-ground
+   colour inside them, so they sit as recessed wells in the panel. */
 .section {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
 .sectionTitle {
-  font-size: 18px;
+  font-size: 20px;
   margin: 0 0 16px;
 }
 

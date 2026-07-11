@@ -1,0 +1,47 @@
+/* Scoped to HearthBackdrop: the fixed, blurred room behind the library pages.
+
+   Three layers, bottom to top: the photo (blurred, slightly oversized so the
+   blur can't reveal a hard edge), a scrim gradient (keeps text readable over
+   the photo's bright spots - the fire itself), and then, above this whole
+   component, the actual page content. */
+
+.room {
+  position: fixed;
+  inset: 0;
+  z-index: -1; /* behind ALL page content, above the body's flat ground */
+  overflow: hidden; /* clips the oversized photo */
+  background: var(--color-bg); /* paints first, so the photo never pops in from a flash of white */
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Blur softens the pixel art into a painterly room; the scale hides the
+     translucent halo a blur leaves at the element's edges.
+
+     brightness(0.55) is a CONTRAST GUARANTEE, not a mood dial: the photo's
+     fire core is near-white (rgb 255,255,220), and because this layer is
+     fixed while content scrolls, any text can eventually pass over it at the
+     scrim's thinnest band. Multiplicative dimming caps that peak so parchment
+     text holds 4.5:1 everywhere (verified in docs/design/contrast-check.mjs);
+     muted text additionally needs a local panel when it sits on bare photo.
+     Retune the scrim freely - this filter is the floor that must stay. */
+  filter: blur(6px) brightness(0.55);
+  transform: scale(1.06);
+}
+
+/* Readability guarantee: darkest at the top (under the heading and filter
+   pills), easing in the middle where the bookcase - itself opaque - carries
+   the contrast, then settling darker again for the loans section below. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 12, 6, 0.72),
+    rgba(20, 12, 6, 0.45) 38%,
+    rgba(20, 12, 6, 0.62) 78%,
+    rgba(20, 12, 6, 0.78)
+  );
+}

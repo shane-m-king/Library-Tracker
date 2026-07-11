@@ -1,5 +1,4 @@
-import LoanCard from './LoanCard.jsx';
-import CardGrid from './CardGrid.jsx';
+import LoanShelf from './LoanShelf.jsx';
 import Button from './Button.jsx';
 import ToggleGroup from './ToggleGroup.jsx';
 import styles from './LoansSection.module.css';
@@ -12,16 +11,21 @@ const VIEWS = [
   { key: 'history', label: 'History' },
 ];
 
-// The "loans" area below the library on LibraryPage. Presentational: it receives all
-// the user's loans (plus loading/error state) and slices them - it does NOT fetch.
-// LibraryPage owns the useLoans data so it can refetch this section when a library
-// change clears lent-out loans, and owns the record-a-loan modal that onRecordLoan
-// opens.
+// The "loans" area below the library on LibraryPage: two thin covers-only
+// shelves (Lent out / Borrowed) side by side, so the collection stays the
+// star of the page. Everything about a loan - who has it, dates, actions -
+// moved into LoanDetailModal, opened by clicking a cover (the same pattern
+// as the collection's shelf).
+//
+// Presentational: it receives all the user's loans (plus loading/error state)
+// and slices them - it does NOT fetch. LibraryPage owns the useLoans data so
+// it can refetch this section when a library change clears lent-out loans,
+// and owns the record-a-loan modal that onRecordLoan opens.
 //
 // Two axes of organisation:
 //   - a Current / History toggle (active vs returned), partitioned in memory so
 //     switching is instant - we already hold every loan;
-//   - within the chosen view, two labelled groups: Lent out and Borrowed.
+//   - within the chosen view, two labelled shelves: Lent out and Borrowed.
 //
 // The current/history toggle is CONTROLLED by the parent (`view` + `onViewChange`)
 // rather than held locally, so a mutation on LibraryPage that produces a now-active
@@ -30,9 +34,8 @@ const VIEWS = [
 // vanish.
 //
 // Props: loans, loading, error, view ('current' | 'history'), onViewChange(view),
-// onRetry (re-run the fetch after a failed load), onRecordLoan (open the record-a-loan
-// modal), and the per-card actions onMarkReturned / onEditLoan / onDeleteLoan (passed
-// straight through to each card).
+// onRetry (re-run the fetch after a failed load), onRecordLoan (open the
+// record-a-loan modal), onOpenLoan(loan) (open the loan detail modal).
 export default function LoansSection({
   loans,
   loading,
@@ -41,9 +44,7 @@ export default function LoansSection({
   onViewChange,
   onRetry,
   onRecordLoan,
-  onMarkReturned,
-  onEditLoan,
-  onDeleteLoan,
+  onOpenLoan,
 }) {
   // Slice by the chosen view first (active vs returned), then by direction. Computed
   // unconditionally - harmless on an empty list - so the render branches stay simple.
@@ -85,61 +86,35 @@ export default function LoansSection({
             </div>
           </div>
 
-          {loans.length === 0 ? (
-            <p className={styles.state}>You haven’t lent out or borrowed any books yet.</p>
-          ) : visible.length === 0 ? (
-            // There ARE loans, just none in this view (e.g. History with nothing
-            // returned yet). A single line reads better than two empty groups.
-            <p className={styles.empty}>
-              {view === 'current' ? 'Nothing out on loan right now.' : 'No returned loans yet.'}
-            </p>
-          ) : (
-            <>
-              <LoanGroup
-                title="Lent out"
-                loans={lentOut}
-                emptyText="Nothing here."
-                onMarkReturned={onMarkReturned}
-                onEdit={onEditLoan}
-                onDelete={onDeleteLoan}
-              />
-              <LoanGroup
-                title="Borrowed"
-                loans={borrowed}
-                emptyText="Nothing here."
-                onMarkReturned={onMarkReturned}
-                onEdit={onEditLoan}
-                onDelete={onDeleteLoan}
-              />
-            </>
-          )}
+          {/* The shelves render whether or not anything is on them - an empty
+              board IS the empty state (the shelves announce emptiness to
+              screen readers internally), so the layout never jumps between
+              "has loans" and "doesn't".
+
+              key={view}: switching Current/History remounts the shelves so
+              their internal paging resets - page 2 of Current means nothing
+              in History (same pattern as the bookcase's key={filter}). */}
+          <div className={styles.groups}>
+            <LoanGroup key={`lent-${view}`} title="Lent out" loans={lentOut} onOpen={onOpenLoan} />
+            <LoanGroup
+              key={`borrowed-${view}`}
+              title="Borrowed"
+              loans={borrowed}
+              onOpen={onOpenLoan}
+            />
+          </div>
         </>
       )}
     </section>
   );
 }
 
-// One labelled group of loans (or a muted note when this direction is empty but the
-// other isn't - so both headings stay present for a stable, predictable layout).
-function LoanGroup({ title, loans, emptyText, onMarkReturned, onEdit, onDelete }) {
+// One labelled shelf of loans; an empty direction shows its bare board.
+function LoanGroup({ title, loans, onOpen }) {
   return (
     <div className={styles.group}>
       <h3 className={styles.heading}>{title}</h3>
-      {loans.length === 0 ? (
-        <p className={styles.empty}>{emptyText}</p>
-      ) : (
-        <CardGrid>
-          {loans.map((loan) => (
-            <LoanCard
-              key={loan.id}
-              loan={loan}
-              onMarkReturned={onMarkReturned}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          ))}
-        </CardGrid>
-      )}
+      <LoanShelf loans={loans} onOpen={onOpen} />
     </div>
   );
 }

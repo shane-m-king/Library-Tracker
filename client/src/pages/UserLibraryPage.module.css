@@ -1,10 +1,13 @@
-/* Scoped to UserLibraryPage: the page shell, the profile heading, the status filter
-   tabs, the loading/empty/error/blocked message style, and the card grid. The cards
-   style themselves in LibraryItemCard.module.css. Mirrors LibraryPage's grid + filter
-   styling (a Step 8 consolidation candidate). */
+/* Scoped to UserLibraryPage: the page shell, the profile heading, the status
+   filter tabs, and the loading/empty/error/blocked message style. The bookcase
+   styles itself in Bookshelf; books in ShelfBook/BookCover. Mirrors
+   LibraryPage's page width + filter styling. */
 
 .page {
-  max-width: var(--max-width);
+  /* Wider than the app's default column: the bookcase (max 1000px in
+     Bookshelf) needs the room for its five slots plus the shelf decor.
+     LibraryPage matches - the two library pages share this width. */
+  max-width: 1080px;
   margin: 0 auto;
   padding: 48px 24px;
 }
@@ -14,12 +17,16 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap; /* the back link drops below the title instead of overflowing */
   margin-bottom: 24px;
 }
 
 .title {
   font-size: 32px;
   margin: 0;
+  /* The page sits over the blurred hearth photo (HearthBackdrop); the shadow
+     keeps the heading legible over the photo's brighter spots. */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .handle {
@@ -39,11 +46,17 @@
   margin-bottom: 24px;
 }
 
-/* Shared loading / empty / error / blocked message style. */
+/* Shared loading / empty / error / blocked message style. The panel is a
+   contrast requirement: muted text on the bare hearth photo fails WCAG at the
+   scrim's thinnest band (see LibraryPage.module.css / contrast-check.mjs). */
 .state {
   color: var(--color-text-muted);
   text-align: center;
-  padding: 48px 0;
+  width: fit-content;
+  margin: 48px auto;
+  padding: 20px 28px;
+  background: rgba(20, 12, 6, 0.7);
+  border-radius: var(--radius);
 }
 
 .error {

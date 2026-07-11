@@ -1,13 +1,15 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { useLibrary } from '../hooks/useLibrary.js';
 import { useLoans } from '../hooks/useLoans.js';
 import { deleteLibraryItem } from '../api/library.js';
 import { updateLoan, deleteLoan } from '../api/loans.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import { todayIso } from '../lib/dates.js';
-import LibraryItemCard from '../components/LibraryItemCard.jsx';
-import CardGrid from '../components/CardGrid.jsx';
+import ShelfBook from '../components/ShelfBook.jsx';
+import Bookshelf from '../components/Bookshelf.jsx';
+import HearthBackdrop from '../components/HearthBackdrop.jsx';
+import BookDetailModal from '../components/BookDetailModal.jsx';
+import LoanDetailModal from '../components/LoanDetailModal.jsx';
 import LoansSection from '../components/LoansSection.jsx';
 import Button from '../components/Button.jsx';
 import Notice from '../components/Notice.jsx';
@@ -31,6 +33,9 @@ export default function LibraryPage() {
   // Drives the add-book modal. State-driven (not a route) keeps the library visible
   // behind it and lets us refetch on add without a navigation round-trip.
   const [isAddOpen, setIsAddOpen] = useState(false);
+  // The book currently "off the shelf" - the detail modal's subject (null when
+  // closed). Its Edit/Remove buttons close it and hand the item to the states below.
+  const [detailItem, setDetailItem] = useState(null);
   // The item currently being edited / being removed (null when those modals are
   // closed). Holding the whole item lets the modals show its details.
   const [editingItem, setEditingItem] = useState(null);
@@ -39,6 +44,9 @@ export default function LibraryPage() {
   const [deleteError, setDeleteError] = useState(null);
   // Drives the record-a-loan modal (lend out / borrow), shown from the loans section.
   const [isRecordLoanOpen, setIsRecordLoanOpen] = useState(false);
+  // The loan currently "off the shelf" - the loan detail modal's subject (null
+  // when closed). Mirrors detailItem: its actions close it and hand the loan on.
+  const [detailLoan, setDetailLoan] = useState(null);
   // The loan currently being edited / removed (null when those modals are closed),
   // plus the remove modal's in-flight + error state - mirroring the library ones.
   const [editingLoan, setEditingLoan] = useState(null);
@@ -185,18 +193,14 @@ export default function LibraryPage() {
 
   return (
     <main className={styles.page}>
+      <HearthBackdrop />
       <div className={styles.header}>
         <h1 className={styles.title} tabIndex={-1} ref={headingRef}>
           Your library
         </h1>
-        <div className={styles.headerActions}>
-          <Button variant="primary" onClick={() => setIsAddOpen(true)}>
-            Add book
-          </Button>
-          <Link to="/" className={styles.backLink}>
-            Back home
-          </Link>
-        </div>
+        <Button variant="primary" onClick={() => setIsAddOpen(true)}>
+          Add book
+        </Button>
       </div>
 
       <Notice notice={notice} onDismiss={clearNotice} />
@@ -226,31 +230,22 @@ export default function LibraryPage() {
             Try again
           </Button>
         </div>
-      ) : items.length === 0 ? (
-        <p className={styles.state}>
-          {filter === 'all' ? (
-            <>
-              No books yet.{' '}
-              <Button variant="link" onClick={() => setIsAddOpen(true)}>
-                Add your first book
-              </Button>
-              .
-            </>
-          ) : (
-            `No ${filter} books yet.`
-          )}
-        </p>
       ) : (
-        <CardGrid>
-          {items.map((item) => (
-            <LibraryItemCard
-              key={item.id}
-              item={item}
-              onEdit={setEditingItem}
-              onDelete={setDeletingItem}
-            />
-          ))}
-        </CardGrid>
+        // An empty library (or an empty filter) shows the empty bookcase
+        // itself - bare shelves say "room to grow" better than a text
+        // placeholder, and the Add book button is right above. The shelf
+        // announces its emptiness to screen readers internally.
+        <Bookshelf
+          // Remount when the filter changes so paging snaps back to the first
+          // caseful - "shelf 3 of All" means nothing in the Wishlist view.
+          key={filter}
+          items={items}
+          renderBook={(item) => (
+            // Every book the case shows is on screen at once, so all covers
+            // load eagerly - the shelf IS the page's LCP.
+            <ShelfBook key={item.id} item={item} onOpen={setDetailItem} eager />
+          )}
+        />
       )}
 
       {/* Borrowed & lent-out books, below the library proper. */}
@@ -262,9 +257,7 @@ export default function LibraryPage() {
         onViewChange={setLoansView}
         onRetry={() => refetchLoans().catch(() => {})}
         onRecordLoan={() => setIsRecordLoanOpen(true)}
-        onMarkReturned={handleMarkReturned}
-        onEditLoan={setEditingLoan}
-        onDeleteLoan={setDeletingLoan}
+        onOpenLoan={setDetailLoan}
       />
 
       <Modal
@@ -281,12 +274,37 @@ export default function LibraryPage() {
         )}
       </Modal>
 
+      {/* The "loan off the shelf" detail view. Its actions close it first, then
+          hand the loan on - one dialog at a time, like the book detail modal.
+          Focus returns to the heading: Mark returned removes the triggering
+          cover from the Current shelf, so the cover can't be trusted to
+          still exist when the modal closes. */}
+      <LoanDetailModal
+        loan={detailLoan}
+        onClose={() => setDetailLoan(null)}
+        returnFocusRef={headingRef}
+        onMarkReturned={(loan) => {
+          setDetailLoan(null);
+          handleMarkReturned(loan);
+        }}
+        onEdit={(loan) => {
+          setDetailLoan(null);
+          setEditingLoan(loan);
+        }}
+        onDelete={(loan) => {
+          setDetailLoan(null);
+          setDeletingLoan(loan);
+        }}
+      />
+
       {/* Edit-loan modal. Keyed by loan id so switching loans remounts the form with
-          fresh initial values rather than reusing stale state. */}
+          fresh initial values rather than reusing stale state. Focus returns to the
+          heading on close: its trigger lives in the loan detail modal, already gone. */}
       <Modal
         isOpen={editingLoan !== null}
         onClose={() => setEditingLoan(null)}
         title="Edit loan"
+        returnFocusRef={headingRef}
       >
         {editingLoan && (
           <EditLoanForm
@@ -321,12 +339,30 @@ export default function LibraryPage() {
         <BookSearch onAdded={refetch} />
       </Modal>
 
+      {/* The "book off the shelf" detail view. Its Edit/Remove close it first, then
+          open the corresponding modal below - one dialog at a time. */}
+      <BookDetailModal
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
+        onEdit={(item) => {
+          setDetailItem(null);
+          setEditingItem(item);
+        }}
+        onDelete={(item) => {
+          setDetailItem(null);
+          setDeletingItem(item);
+        }}
+      />
+
       {/* Edit modal. Keyed by item id so switching from one book to another remounts
-          the form with fresh initial values rather than reusing stale state. */}
+          the form with fresh initial values rather than reusing stale state. Focus
+          returns to the heading on close: its trigger lives in the detail modal,
+          which is already gone. */}
       <Modal
         isOpen={editingItem !== null}
         onClose={() => setEditingItem(null)}
         title={editingItem ? `Edit “${editingItem.book.title}”` : 'Edit'}
+        returnFocusRef={headingRef}
       >
         {editingItem && (
           <EditLibraryItemForm

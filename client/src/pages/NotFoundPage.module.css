@@ -1,0 +1,33 @@
+/* Scoped to NotFoundPage: a quiet, centered "empty shelf" page. */
+
+.page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 96px 24px;
+  text-align: center;
+}
+
+.code {
+  margin: 0 0 4px;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  letter-spacing: 0.35em;
+  color: var(--color-brass);
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 5vw, 34px);
+}
+
+.hint {
+  margin: 0 0 24px;
+  color: var(--color-text-muted);
+}
+
+.emblem {
+  display: block;
+  margin-bottom: 24px;
+  font-size: 20px;
+  color: var(--color-brass);
+}

@@ -1,9 +1,12 @@
-/* Scoped to LibraryPage. The page shell, the filter tabs, the shared
-   loading/empty/error message style, and the responsive card grid. Individual
-   cards style themselves in LibraryItemCard.module.css. */
+/* Scoped to LibraryPage. The page shell, the filter tabs, and the shared
+   loading/empty/error message style. The bookcase styles itself in Bookshelf;
+   individual books in ShelfBook/BookCover. */
 
 .page {
-  max-width: var(--max-width);
+  /* Wider than the app's default column: the bookcase (max 1000px in
+     Bookshelf) needs the room for its five slots plus the shelf decor.
+     UserLibraryPage matches - the two library pages share this width. */
+  max-width: 1080px;
   margin: 0 auto;
   padding: 48px 24px;
 }
@@ -13,12 +16,16 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap; /* Add book drops below the title instead of overflowing */
   margin-bottom: 24px;
 }
 
 .title {
   font-size: 32px;
   margin: 0;
+  /* The page sits over the blurred hearth photo (HearthBackdrop); the shadow
+     keeps the heading legible over the photo's brighter spots. */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 /* The heading doubles as the focus-return target after a delete (see LibraryPage).
@@ -29,30 +36,25 @@
   outline: none;
 }
 
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-
-.backLink {
-  color: var(--color-text-muted);
-  font-size: 14px;
-  white-space: nowrap;
-}
-
 /* Layout only - the filter pills style themselves in ToggleGroup. */
 .filters {
   margin-bottom: 24px;
 }
 
 /* Shared style for the loading / empty / error messages: muted, centred, with
-   breathing room so the page never looks broken in a non-list state. */
+   breathing room so the page never looks broken in a non-list state. The
+   panel is a contrast requirement, not decoration: this text sits on the bare
+   hearth photo (no bookcase to stand on), and muted-on-photo fails WCAG at
+   the scrim's thinnest band - the local ground makes it pass everywhere
+   (see docs/design/contrast-check.mjs). */
 .state {
   color: var(--color-text-muted);
   text-align: center;
-  padding: 48px 0;
+  width: fit-content;
+  margin: 48px auto;
+  padding: 20px 28px;
+  background: rgba(20, 12, 6, 0.7);
+  border-radius: var(--radius);
 }
 
 .error {

@@ -6,12 +6,10 @@
   margin-bottom: 20px;
 }
 
+/* The one canonical input recipe lives in Field.module.css; composes pulls that
+   class onto this element so the search box can never drift from form inputs. */
 .searchInput {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 15px;
+  composes: input from './Field.module.css';
 }
 
 .state {

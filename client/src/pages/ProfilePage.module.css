@@ -22,10 +22,33 @@
   margin: 0;
 }
 
-.backLink {
-  color: var(--color-text-muted);
+/* The identity header: the big brass coin + name/@handle, live from the auth
+   context so a saved edit updates it immediately. */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.identityAvatar {
+  --avatar-size: 52px;
+}
+
+.identityText {
+  min-width: 0;
+}
+
+.identityName {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.identityHandle {
+  margin: 0;
   font-size: 14px;
-  white-space: nowrap;
+  color: var(--color-text-muted);
 }
 
 .form {

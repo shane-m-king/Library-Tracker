@@ -1,0 +1,127 @@
+/* Scoped to BookCover: a physical-looking book front. Sized by --cover-width
+   (default 116px) at a 2:3 aspect ratio, so every book on a shelf is the same
+   height regardless of Google's thumbnail dimensions.
+
+   Colour note: the cloth tones and shading here are decorative literals, not
+   tokens - stand-in "materials" (like the shelf wood) that a real texture image
+   may replace later. */
+
+.book {
+  position: relative;
+  display: block;
+  width: var(--cover-width, 116px);
+  aspect-ratio: 2 / 3;
+  /* Square-ish left edge (the spine), rounded right edge (the page side). */
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 12px 14px -9px rgba(0, 0, 0, 0.75);
+  /* Lets the cloth fallback below adapt to how small this instance renders. */
+  container-type: inline-size;
+}
+
+.art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  background: var(--color-surface); /* shows while the image loads */
+}
+
+/* The cloth-bound stand-in for books with no cover art. Layered background:
+   a diagonal light, a fine weave, then the cloth colour set by a tone class. */
+.cloth {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 14px 12px;
+  border-radius: inherit;
+  overflow: hidden;
+  text-align: center;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.07), rgba(0, 0, 0, 0.18) 62%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 4px),
+    linear-gradient(180deg, var(--cloth-light), var(--cloth-dark));
+}
+
+.toneGreen {
+  --cloth-light: #345539;
+  --cloth-dark: #26402e;
+}
+
+.toneOxblood {
+  --cloth-light: #5d3037;
+  --cloth-dark: #4a2429;
+}
+
+.toneNavy {
+  --cloth-light: #2e4364;
+  --cloth-dark: #22334d;
+}
+
+.toneBrown {
+  --cloth-light: #59422a;
+  --cloth-dark: #453019;
+}
+
+.clothTitle {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--color-text);
+  /* Clamp long titles to the cover; the full title always reaches assistive
+     tech through the label/heading beside the cover (shelf button aria-label,
+     modal heading). */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.clothAuthor {
+  margin-top: 6px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clothEmblem {
+  margin-top: auto;
+  font-size: 14px;
+  color: var(--color-brass);
+}
+
+/* At thumbnail sizes (loan cards, search rows) the embossed text can't fit
+   legibly - the cloth keeps just its binding and emblem. The adjacent text
+   always carries the title, so nothing is lost. */
+@container (max-width: 72px) {
+  .clothTitle,
+  .clothAuthor {
+    display: none;
+  }
+
+  .cloth {
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+  }
+
+  .clothEmblem {
+    margin-top: 0;
+  }
+}
+
+/* Shared physicality for both variants: sheen, brass hairline, spine shadow. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.14) 62%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 163, 90, 0.18),
+    inset 8px 0 12px -8px rgba(0, 0, 0, 0.55);
+}

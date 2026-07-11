@@ -12,7 +12,8 @@
   --color-bg: #332614; /* cabin-wall brown */
   --color-surface: #241a10; /* raised panels: deep walnut */
   --color-surface-sunken: #1b1209; /* recessed wells: inputs, pill tracks */
-  --color-border: rgba(201, 163, 90, 0.25); /* brass hairline */
+  --color-brass: #c9a35a; /* aged brass - metal details: avatar, wordmark, case trim */
+  --color-border: rgba(201, 163, 90, 0.25); /* brass hairline (translucent --color-brass) */
 
   /* Text */
   --color-text: #efe3d0; /* candlelight parchment */
@@ -22,8 +23,11 @@
   --color-accent: #e8863b; /* ember */
   --color-accent-hover: #f09a56;
   --color-on-accent: #1a120b; /* text on ember/danger fills (light fills, dark text) */
-  --color-danger: #e56a56; /* warm red, light enough to read on the dark ground */
-  --color-danger-surface: rgba(229, 106, 86, 0.14);
+  /* Warm red, light enough to read on the dark ground. Verified 4.5:1+ on bg,
+     surface, AND composited over its own tint (the error-banner case, the
+     tightest pairing - #e56a56 failed it at 4.38). */
+  --color-danger: #e97867;
+  --color-danger-surface: rgba(233, 120, 103, 0.14);
 
   /* Status tints for badges & banners: translucent fills + light text, so they
      sit on any surface. Semantic, not decorative - each maps to a state:
@@ -38,6 +42,14 @@
   --status-neutral-bg: rgba(201, 163, 90, 0.16);
   --status-neutral-text: #d4c3a8;
 
+  /* Wood material for the HomePage vignette plank (top edge / body /
+     underside). The bookcase itself graduated to the real texture image
+     (Dark_Wood.png in Bookshelf); the vignette may follow in the style
+     round, at which point these can go. */
+  --wood-light: #6a4a2c;
+  --wood-mid: #45301c;
+  --wood-dark: #2a1c10;
+
   /* Spacing / shape tokens */
   --radius: 8px;
   --space: 16px;
@@ -51,6 +63,10 @@
   line-height: 1.5;
   color: var(--color-text);
   background: var(--color-bg);
+  /* Tell the browser our ground is dark, so NATIVE widgets - date-picker
+     calendars, <select> dropdowns, scrollbars - render dark to match instead
+     of defaulting to light. */
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -87,4 +103,13 @@ a:hover {
 button {
   font: inherit;
   cursor: pointer;
+}
+
+/* One keyboard-focus language everywhere: an ember ring (5.5:1 on the ground -
+   comfortably past the 3:1 non-text minimum). Buttons, links, pills, and inputs
+   all get this by default; a component only overrides it to TUNE the ring
+   (e.g. ShelfBook offsets it clear of the cover), never to remove it. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

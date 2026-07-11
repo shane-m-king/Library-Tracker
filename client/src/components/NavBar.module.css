@@ -1,0 +1,144 @@
+/* Scoped to NavBar: the persistent top bar. Layout is brand | links | session -
+   the brand's margin-right:auto pushes everything else to the right edge.
+
+   Colour note: decorative gradient stops (the flame mark's highlight/shadow, the
+   avatar's sheen) are local literals, not tokens - tokens name semantic ROLES,
+   and these are one-off shades of ember/brass, like box-shadows and scrims. */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 14px clamp(16px, 4vw, 48px);
+  /* Warm-black scrim (same family as the Modal backdrop) fading downward, so the
+     bar reads as lit from within the room rather than a flat opaque block. */
+  background: linear-gradient(180deg, rgba(20, 12, 6, 0.62), rgba(20, 12, 6, 0.08));
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Brand: flame mark + wordmark, one link back to the landing page. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  color: var(--color-text);
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  background: radial-gradient(circle at 50% 35%, #ffd9a0, var(--color-accent) 55%, #a24d18);
+  box-shadow:
+    0 0 16px rgba(232, 134, 59, 0.45),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.wordmark {
+  font-family: var(--font-serif);
+  font-size: 20px;
+}
+
+.wordmark b {
+  font-weight: 600;
+}
+
+.wordmarkDim {
+  color: var(--color-brass);
+}
+
+/* Section links. Muted at rest; the current section brightens and gets the
+   ember-to-brass underline from the mockup. */
+.nav {
+  display: flex;
+  gap: 24px;
+}
+
+.link {
+  position: relative;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.link:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.activeLink {
+  color: var(--color-text);
+}
+
+.activeLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-brass));
+}
+
+/* Session cluster: avatar (a link to /profile) + a quiet log-out. */
+.session {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The coin itself renders via the shared <Avatar>; this is just its link shell. */
+.avatarLink {
+  display: block;
+  border-radius: 50%;
+}
+
+.avatarLink:hover {
+  text-decoration: none;
+  filter: brightness(1.08); /* firelight: hover glows lighter */
+}
+
+/* Log out is an action, but it lives in the bar's link language, not the page's
+   button language - so it's styled as a quiet nav link. */
+.logout {
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.logout:hover {
+  color: var(--color-text);
+}
+
+/* Keyboard focus comes from the global :focus-visible ring (index.css). */
+
+/* Narrow screens: tighten the bar and let the wordmark go by its mark + name. */
+@media (max-width: 600px) {
+  .topbar {
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .nav {
+    gap: 16px;
+  }
+
+  .session {
+    gap: 10px;
+  }
+
+  .wordmarkDim {
+    display: none;
+  }
+}

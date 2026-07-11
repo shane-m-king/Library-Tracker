@@ -6,12 +6,10 @@
   margin-bottom: 20px;
 }
 
+/* The one canonical input recipe lives in Field.module.css; composes pulls that
+   class onto this element so the search box can never drift from form inputs. */
 .searchInput {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 15px;
+  composes: input from './Field.module.css';
 }
 
 .state {
@@ -46,28 +44,11 @@
   border-radius: var(--radius);
 }
 
-.cover,
-.coverFallback {
-  flex-shrink: 0;
-  width: 48px;
-  height: 72px;
-  border-radius: 4px;
-}
-
+/* The cover renders via the shared BookCover, scaled to result-row size - it
+   reads --cover-width off its own element, so setting it here is the whole API. */
 .cover {
-  object-fit: cover;
-  background: var(--color-surface);
-}
-
-.coverFallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 11px;
-  text-align: center;
+  --cover-width: 48px;
+  flex-shrink: 0;
 }
 
 /* The middle column flexes to fill the space between cover and actions. min-width:0

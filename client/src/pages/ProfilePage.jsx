@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth.js';
 import { getErrorMessage } from '../api/apiFetch.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import Button from '../components/Button.jsx';
 import Field from '../components/Field.jsx';
 import Notice from '../components/Notice.jsx';
+import Avatar from '../components/Avatar.jsx';
 import { useNotice } from '../hooks/useNotice.js';
 import styles from './ProfilePage.module.css';
 
@@ -126,9 +127,17 @@ export default function ProfilePage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Your profile</h1>
-        <Link to="/" className={styles.backLink}>
-          Back home
-        </Link>
+      </div>
+
+      {/* Who you are, per the auth context - the single source of truth. Saving
+          the form updates `user`, so this header re-renders with the new identity
+          the moment the server confirms it. */}
+      <div className={styles.identity}>
+        <Avatar name={user.displayName} className={styles.identityAvatar} />
+        <div className={styles.identityText}>
+          <p className={styles.identityName}>{user.displayName}</p>
+          <p className={styles.identityHandle}>@{user.username}</p>
+        </div>
       </div>
 
       <Notice notice={notice} onDismiss={clearNotice} />

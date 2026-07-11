@@ -1,0 +1,110 @@
+/* Scoped to LoanShelf: a thin covers-only shelf for one loan direction.
+   Deliberately composes the app's existing shelf language instead of
+   restating it: the brass knob from Bookshelf, the book button + firelight
+   lift from ShelfBook (composing those classes means ShelfBook's own
+   `.bookButton:hover .lift` rules fire here too - same class tokens). */
+
+.shelf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrow {
+  composes: knob from './Bookshelf.module.css';
+  flex-shrink: 0;
+}
+
+/* min-width:0 lets the row shrink inside the flex line instead of pushing
+   the knobs out of the group's column. */
+.rowWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Six fixed slots (four on phones - MUST match LoanShelf.jsx's perPage).
+   Fixed columns for the same reason as the bookcase: a short page reads as
+   free space on the same shelf, and the board never reflows. min-height
+   keeps the Lent out / Borrowed boards level with each other even when one
+   shelf's covers are cloth fallbacks. */
+.row {
+  --slot: 56px;
+  --cover-width: var(--slot);
+
+  list-style: none;
+  margin: 0;
+  padding: 0 10px;
+  display: grid;
+  grid-template-columns: repeat(6, var(--slot));
+  column-gap: 10px;
+  align-items: end;
+  min-height: calc(var(--slot) * 1.5 + 12px); /* cover (2:3) + lift headroom */
+}
+
+.slot {
+  display: flex;
+  justify-content: center;
+}
+
+.bookButton {
+  composes: bookButton from './ShelfBook.module.css';
+}
+
+.lift {
+  composes: lift from './ShelfBook.module.css';
+}
+
+/* The single board the covers stand on - same material story as the
+   bookcase's boards, scaled down. */
+.board {
+  height: 12px;
+  border-radius: 2px 2px 3px 3px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0 2px,
+      transparent 2px 40%,
+      rgba(0, 0, 0, 0.3) 75%,
+      rgba(0, 0, 0, 0.55)
+    ),
+    url('../assets/images/Dark_Wood.png');
+  background-size: auto, 200px;
+  box-shadow:
+    0 1px 0 rgba(201, 163, 90, 0.28) inset,
+    0 10px 14px -8px rgba(0, 0, 0, 0.85);
+}
+
+/* Overdue chip, perched on the cover like the collection's Wishlist marker
+   but in the danger tones (mirrors ShelfBook's .wishMarker - kept separate
+   because overriding composed colours depends on bundle order). Danger text
+   over its tint over surface passes 4.5:1 - the pair is in
+   docs/design/contrast-check.mjs. */
+.overdueMarker {
+  position: absolute;
+  top: 4px;
+  right: -2px;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-danger);
+  background:
+    linear-gradient(var(--color-danger-surface), var(--color-danger-surface)),
+    var(--color-surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Visually hidden, still announced: page turns and the empty-shelf note.
+   One recipe, defined with the rest of the shared shelf language. */
+.srOnly {
+  composes: srOnly from './Bookshelf.module.css';
+}
+
+/* MUST match the useMediaQuery breakpoint in LoanShelf.jsx. */
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: repeat(4, var(--slot));
+  }
+}

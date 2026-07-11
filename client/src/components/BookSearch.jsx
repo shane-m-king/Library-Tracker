@@ -4,6 +4,7 @@ import { addBook } from '../api/library.js';
 import { ApiError, getErrorMessage } from '../api/apiFetch.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import Button from './Button.jsx';
+import BookCover from './BookCover.jsx';
 import styles from './BookSearch.module.css';
 
 // The shortest query we'll search for. One or two stray characters match half of
@@ -150,18 +151,8 @@ export default function BookSearch({ onAdded, onSelect }) {
             const title = book.title ?? 'Untitled';
             return (
               <li key={book.googleVolumeId} className={styles.result}>
-                {book.thumbnailUrl ? (
-                  <img
-                    className={styles.cover}
-                    src={book.thumbnailUrl}
-                    alt={`Cover of ${title}`}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className={styles.coverFallback} aria-hidden="true">
-                    No cover
-                  </div>
-                )}
+                {/* Decorative (alt="") - the title is in text right beside it. */}
+                <BookCover book={book} className={styles.cover} />
 
                 <div className={styles.info}>
                   <h3 className={styles.bookTitle}>{title}</h3>

@@ -1,0 +1,66 @@
+/* Scoped to ShelfBook: one book standing in a shelf slot. The whole thing is
+   the cover - no caption - so the book rests directly on the board. The hover
+   effect lifts the book (via the .lift class passed into BookCover) the way a
+   hand would pull it off the shelf. */
+
+.slot {
+  display: flex;
+  justify-content: center;
+}
+
+/* The whole book is one button - reset the chrome. */
+.bookButton {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  width: var(--cover-width, 116px);
+  color: inherit;
+  font: inherit;
+}
+
+/* TUNES the global :focus-visible ember ring (index.css): the outline itself
+   comes from there; here we only push it clear of the cover art. */
+.bookButton:focus-visible {
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lift {
+    transition:
+      transform 0.25s ease,
+      filter 0.25s ease;
+    transform-origin: bottom center;
+  }
+}
+
+/* Firelight hover: the book lifts and catches an ember glow. filter (not
+   box-shadow) so we never collide with BookCover's own base shadow. */
+.bookButton:hover .lift,
+.bookButton:focus-visible .lift {
+  transform: translateY(-8px);
+  filter: drop-shadow(0 16px 12px rgba(0, 0, 0, 0.45))
+    drop-shadow(0 0 10px rgba(232, 134, 59, 0.22));
+}
+
+/* Wishlist marker, perched on the cover's top-right corner. The info tint is
+   translucent, so it's layered over the surface colour to stay readable on any
+   cover art beneath it. */
+.wishMarker {
+  position: absolute;
+  top: 6px;
+  right: 2px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--status-info-text);
+  background:
+    linear-gradient(var(--status-info-bg), var(--status-info-bg)),
+    var(--color-surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}

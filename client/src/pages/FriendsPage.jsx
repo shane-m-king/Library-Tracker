@@ -91,9 +91,6 @@ export default function FriendsPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Friends</h1>
-        <Link to="/" className={styles.backLink}>
-          Back home
-        </Link>
       </div>
 
       <Notice notice={notice} onDismiss={clearNotice} />
