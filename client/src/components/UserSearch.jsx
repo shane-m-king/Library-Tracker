@@ -5,6 +5,9 @@ import { getErrorMessage } from '../api/apiFetch.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import PersonRow from './PersonRow.jsx';
 import Button from './Button.jsx';
+// The search box IS a Field input - same class, imported directly (cross-file
+// composes is banned - see shelfShared.module.css for the full story).
+import fieldStyles from './Field.module.css';
 import styles from './UserSearch.module.css';
 
 // Find people by username or display name and send them a friend request. This is
@@ -85,7 +88,7 @@ export default function UserSearch() {
     <div>
       <form className={styles.searchForm} role="search" onSubmit={(e) => e.preventDefault()}>
         <input
-          className={styles.searchInput}
+          className={fieldStyles.input}
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}

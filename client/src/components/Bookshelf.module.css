@@ -20,42 +20,15 @@
 
 /* ---- Paging ---- */
 
-/* The knob RECIPE, separate from its placement: small brass rounds, same
-   metal language as the Avatar coin. LoanShelf composes this for its own
-   paging arrows, so all shelf paging in the app turns the same knob. */
-.knob {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  border-radius: 50%;
-  font-size: 18px;
-  line-height: 1;
-  color: var(--color-on-accent);
-  background: linear-gradient(160deg, #e3c584, var(--color-brass));
-  box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.5),
-    0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.knob:hover:not(:disabled) {
-  filter: brightness(1.1); /* firelight: hover glows lighter */
-}
-
-/* At either end the knob stays mounted but won't turn - dimming beats
-   disappearing, which would yank the control out from under the pointer. */
-.knob:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
+/* The knob and srOnly recipes live in shelfShared.module.css (imported
+   directly by the JSX - cross-file composes is banned, see that header);
+   this module only PLACES the knobs. */
 
 /* This case's knobs are mounted ON the side posts, not floating beside the
    furniture - flanking arrows would cost ~72px of width and reopen the
-   mid-size overflow the decor breakpoint just solved. */
+   mid-size overflow the decor breakpoint just solved. Rendered alongside
+   shelfShared's .knob. */
 .arrow {
-  composes: knob;
   position: absolute;
   top: 50%;
   z-index: 3; /* above the posts (z-index 2) they're mounted on */
@@ -73,20 +46,6 @@
 /* The pill ground is a contrast requirement: this sits right under the case,
    where the photo's fire glow peaks - muted text on bare photo fails WCAG
    there (see contrast-check.mjs). Same pill language as the filter track. */
-/* Visually hidden, still announced: the empty-shelf note (and LoanShelf's
-   page-turn live region, which composes this). The empty state is furniture
-   for sighted users - bare shelves - so the words live here instead. */
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .pageStatus {
   width: fit-content;
   margin: 10px auto 0;

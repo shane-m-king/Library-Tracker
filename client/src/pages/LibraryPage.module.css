@@ -1,6 +1,6 @@
-/* Scoped to LibraryPage. The page shell, the filter tabs, and the shared
-   loading/empty/error message style. The bookcase styles itself in Bookshelf;
-   individual books in ShelfBook/BookCover. */
+/* Scoped to LibraryPage. The page shell and the shared loading/empty/error
+   message style. The bookcase styles itself in Bookshelf; individual books in
+   ShelfBook/BookCover; the filter/search/sort row in ShelfToolbar. */
 
 .page {
   /* Wider than the app's default column: the bookcase (max 1000px in
@@ -34,11 +34,6 @@
    big heading (which would read as a glitch to sighted users). */
 .title:focus {
   outline: none;
-}
-
-/* Layout only - the filter pills style themselves in ToggleGroup. */
-.filters {
-  margin-bottom: 24px;
 }
 
 /* Shared style for the loading / empty / error messages: muted, centred, with

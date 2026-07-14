@@ -2,6 +2,10 @@ import { useState } from 'react';
 import BookCover from './BookCover.jsx';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { isOverdue } from '../lib/loans.js';
+// shared = app-wide knob + srOnly; shelfBook = the button + hover-lift pair
+// (ShelfBook's real classes, so its hover rule fires here); styles = local.
+import shared from './shelfShared.module.css';
+import shelfBook from './ShelfBook.module.css';
 import styles from './LoanShelf.module.css';
 
 // A thin, covers-only shelf for ONE direction of loans (lent out / borrowed):
@@ -34,7 +38,7 @@ export default function LoanShelf({ loans, onOpen }) {
       {paged && (
         <button
           type="button"
-          className={styles.arrow}
+          className={`${shared.knob} ${styles.arrow}`}
           onClick={() => setPage(current - 1)}
           disabled={current === 0}
           aria-label="Previous loans"
@@ -57,12 +61,12 @@ export default function LoanShelf({ loans, onOpen }) {
                     the loan: title, who has it, and overdue if it is. */}
                 <button
                   type="button"
-                  className={styles.bookButton}
+                  className={shelfBook.bookButton}
                   onClick={() => onOpen(loan)}
                   aria-label={`${loan.book.title ?? 'Untitled'} — ${who}${overdue ? ', overdue' : ''}`}
                 >
                   {overdue && <span className={styles.overdueMarker}>Overdue</span>}
-                  <BookCover book={loan.book} className={styles.lift} />
+                  <BookCover book={loan.book} className={shelfBook.lift} />
                 </button>
               </li>
             );
@@ -74,7 +78,7 @@ export default function LoanShelf({ loans, onOpen }) {
       {paged && (
         <button
           type="button"
-          className={styles.arrow}
+          className={`${shared.knob} ${styles.arrow}`}
           onClick={() => setPage(current + 1)}
           disabled={current === pageCount - 1}
           aria-label="Next loans"
@@ -87,14 +91,14 @@ export default function LoanShelf({ loans, onOpen }) {
           the bookcase's visible pill, this one is screen-reader-only - the
           loans area is fighting for vertical space by design. */}
       {paged && (
-        <p className={styles.srOnly} aria-live="polite">
+        <p className={shared.srOnly} aria-live="polite">
           Page {current + 1} of {pageCount}
         </p>
       )}
 
       {/* Sighted users see a bare board; screen readers skip an empty <ul>
           silently, so say it in words here. */}
-      {loans.length === 0 && <p className={styles.srOnly}>Nothing on this shelf.</p>}
+      {loans.length === 0 && <p className={shared.srOnly}>Nothing on this shelf.</p>}
     </div>
   );
 }

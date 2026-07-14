@@ -27,6 +27,17 @@
   background: var(--color-surface); /* shows while the image loads */
 }
 
+/* Detail views (see the `natural` prop): the box follows the art's own
+   proportions - width stays --cover-width, height comes from the image - so
+   nothing gets trimmed. Only ever set alongside real art. */
+.natural {
+  aspect-ratio: auto;
+}
+
+.natural .art {
+  height: auto;
+}
+
 /* The cloth-bound stand-in for books with no cover art. Layered background:
    a diagonal light, a fine weave, then the cloth colour set by a tone class. */
 .cloth {

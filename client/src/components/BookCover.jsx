@@ -11,7 +11,11 @@ import styles from './BookCover.module.css';
 // wrapper so a parent can hook effects onto it (e.g. ShelfBook's hover lift)
 // without reaching into this module's classes; eager opts a cover out of lazy
 // loading - pass it for above-the-fold covers (the shelf's first row is the
-// page's likely LCP element, and lazy-loading the LCP image delays it).
+// page's likely LCP element, and lazy-loading the LCP image delays it);
+// natural lets real art keep its own proportions instead of being trimmed to
+// the shelf's uniform 2:3 - pass it in detail views, where the point is to
+// see the actual cover (shelves never pass it: equal heights beat exactness
+// there, like real books in a row).
 
 // Coverless books get a cloth colour picked deterministically from the title, so
 // the same book is always "bound" the same way but a shelf of them varies.
@@ -23,7 +27,7 @@ function clothToneOf(title) {
   return CLOTH_TONES[sum % CLOTH_TONES.length];
 }
 
-export default function BookCover({ book, className = '', eager = false }) {
+export default function BookCover({ book, className = '', eager = false, natural = false }) {
   // Library items always have a title (NOT NULL in the DB), but Google search
   // results occasionally don't - don't let a null crash the tone hash. Same
   // defence for authors: every current caller supplies an array, but this
@@ -31,8 +35,14 @@ export default function BookCover({ book, className = '', eager = false }) {
   const title = book.title ?? 'Untitled';
   const firstAuthor = book.authors?.[0];
 
+  // natural only applies to real art - the cloth stand-in is generated, has no
+  // "true" shape, and keeps its 2:3 binding everywhere.
+  const classes = [styles.book, natural && book.thumbnailUrl && styles.natural, className]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <span className={`${styles.book} ${className}`.trim()}>
+    <span className={classes}>
       {book.thumbnailUrl ? (
         <img
           className={styles.art}

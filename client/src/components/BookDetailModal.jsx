@@ -3,7 +3,7 @@ import Button from './Button.jsx';
 import Badge from './Badge.jsx';
 import BookCover from './BookCover.jsx';
 import { formatDate } from '../lib/dates.js';
-import styles from './BookDetailModal.module.css';
+import styles from './detailModal.module.css';
 
 // "Taking the book off the shelf": everything about one library item, opened by
 // clicking a ShelfBook. All the detail the shelf deliberately doesn't show lives
@@ -41,7 +41,9 @@ function DetailBody({ item, onEdit, onDelete }) {
 
   return (
     <div className={styles.layout}>
-      <BookCover book={book} />
+      {/* natural: this is the one place the user inspects the real cover, so
+          it keeps its true proportions instead of the shelf's 2:3 trim. */}
+      <BookCover book={book} natural />
 
       <div className={styles.info}>
         {book.subtitle && <p className={styles.subtitle}>{book.subtitle}</p>}

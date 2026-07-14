@@ -1,0 +1,65 @@
+/* Scoped to ShelfToolbar: filter tabs on the left, search + sort on the
+   right, wrapping into stacked rows when the page column gets narrow. The
+   pills style themselves in ToggleGroup. */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  /* Matches the margin the standalone filter row used to carry, so the
+     bookcase sits exactly where it always did. */
+  margin-bottom: 24px;
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Toolbar control recipe: Field's input language (border, sunken surface,
+   focus ring) at toolbar scale. Deliberately NOT composed from
+   Field.module.css - Field's .input sets width:100%, and overriding a
+   composed property is bundle-order roulette (the same reason LoanShelf's
+   .overdueMarker doesn't compose .wishMarker). Local composes below are
+   fine: one file, one deterministic order. */
+.control {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+
+.control:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
+}
+
+.search {
+  composes: control;
+  width: 230px;
+}
+
+.sort {
+  composes: control;
+  text-shadow: none; /* the select has its own solid ground; don't inherit the label's */
+}
+
+/* The visible "Sort" word sits directly on the hearth photo, so it uses the
+   default parchment text (passes 4.5:1 everywhere thanks to the backdrop's
+   brightness cap - see contrast-check.mjs); muted would fail at the scrim's
+   thinnest band. The shadow matches the page headings' grounding trick. */
+.sortField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}

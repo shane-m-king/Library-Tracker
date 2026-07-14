@@ -1,10 +1,21 @@
-/* Scoped to BookDetailModal: cover on the left, the record on the right. The
-   status badges moved here from the old LibraryItemCard - the shelf no longer
-   shows them at rest. */
+/* The ONE detail-modal layout - cover on the left, the record on the right -
+   shared by BookDetailModal and LoanDetailModal, which both import this file
+   directly and use its classes from JSX. That direct import is the repo's
+   sharing mechanism: one compiled module, always fresh. (It used to be
+   LoanDetailModal composing these classes cross-file, but Vite compiles a
+   `composes: x from './other.css'` by INLINING a private duplicate of the
+   source - which doesn't rebase url()s in dev, goes STALE when the source
+   changes until the dev server restarts, and double-ships every rule in the
+   build. Cross-file composes is banned here for those reasons; same-file
+   composes is fine.) */
 
 .layout {
   display: flex;
   gap: 20px;
+  /* Flex's default stretch would drag the cover to the info column's full
+     height, and object-fit then crops the art's sides to fill it. The cover
+     owns its height (its art's real proportions - see BookCover `natural`). */
+  align-items: flex-start;
 }
 
 /* On a phone-width modal there's no room beside the cover - stack instead. */

@@ -1,6 +1,7 @@
 import LoanShelf from './LoanShelf.jsx';
 import Button from './Button.jsx';
 import ToggleGroup from './ToggleGroup.jsx';
+import { sortLoansForView } from '../lib/loans.js';
 import styles from './LoansSection.module.css';
 
 // The two views of the loans area. 'current' = active (not yet returned) loans, the
@@ -46,17 +47,23 @@ export default function LoansSection({
   onRecordLoan,
   onOpenLoan,
 }) {
-  // Slice by the chosen view first (active vs returned), then by direction. Computed
-  // unconditionally - harmless on an empty list - so the render branches stay simple.
-  const visible = loans.filter((loan) => (view === 'current' ? loan.active : !loan.active));
+  // Slice by the chosen view first (active vs returned), sort by the view's own
+  // clock (due date / return date - see sortLoansForView), then split by direction.
+  // Computed unconditionally - harmless on an empty list - so the render branches
+  // stay simple.
+  const visible = sortLoansForView(
+    loans.filter((loan) => (view === 'current' ? loan.active : !loan.active)),
+    view
+  );
   const lentOut = visible.filter((loan) => loan.direction === 'lent_out');
   const borrowed = visible.filter((loan) => loan.direction === 'borrowed');
 
   return (
     <section className={styles.section} aria-label="Borrowed and lent-out books">
       {/* The big loading/error states only show on the initial load (nothing here
-          yet). Past that, the header - with the Record button - is always present,
-          including when there are no loans, since that's when you most want it. */}
+          yet). Past that, the controls - with the Record button - are always
+          present, including when there are no loans, since that's when you most
+          want it. */}
       {loading && loans.length === 0 ? (
         <p className={styles.state}>Loading your loans…</p>
       ) : error && loans.length === 0 ? (
@@ -68,22 +75,24 @@ export default function LoansSection({
         </div>
       ) : (
         <>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Loans</h2>
-            <div className={styles.headerActions}>
-              {/* The view toggle is only meaningful once there are loans to slice. */}
-              {loans.length > 0 && (
-                <ToggleGroup
-                  options={VIEWS}
-                  value={view}
-                  onChange={onViewChange}
-                  ariaLabel="Show current loans or history"
-                />
-              )}
-              <Button variant="primary" onClick={onRecordLoan}>
-                Record a loan
-              </Button>
-            </div>
+          {/* No "Loans" title - the two shelf headings below say it all, and
+              a quieter section keeps the library above it the star. The small
+              right-aligned controls (+ the section's aria-label) carry the
+              rest. */}
+          <div className={styles.controls}>
+            {/* The view toggle is only meaningful once there are loans to slice. */}
+            {loans.length > 0 && (
+              <ToggleGroup
+                options={VIEWS}
+                value={view}
+                onChange={onViewChange}
+                ariaLabel="Show current loans or history"
+                size="sm"
+              />
+            )}
+            <Button variant="primary" size="sm" onClick={onRecordLoan}>
+              Record a loan
+            </Button>
           </div>
 
           {/* The shelves render whether or not anything is on them - an empty
@@ -110,10 +119,12 @@ export default function LoansSection({
 }
 
 // One labelled shelf of loans; an empty direction shows its bare board.
+// h2: with the "Loans" title gone these sit directly under the page's h1,
+// so h3 would skip a heading level for screen-reader outlines.
 function LoanGroup({ title, loans, onOpen }) {
   return (
     <div className={styles.group}>
-      <h3 className={styles.heading}>{title}</h3>
+      <h2 className={styles.heading}>{title}</h2>
       <LoanShelf loans={loans} onOpen={onOpen} />
     </div>
   );

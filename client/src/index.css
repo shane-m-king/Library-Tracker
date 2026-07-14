@@ -67,6 +67,12 @@
      calendars, <select> dropdowns, scrollbars - render dark to match instead
      of defaulting to light. */
   color-scheme: dark;
+  /* Reserve the scrollbar's lane even when the page can't scroll. Modal locks
+     background scroll with body{overflow:hidden}; without this the scrollbar
+     vanishes and the centred page shifts right on every open/close. Only
+     affects classic (space-taking) scrollbars - overlay scrollbars reserve
+     nothing and never had the shift. */
+  scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -6,12 +6,6 @@
   margin-bottom: 20px;
 }
 
-/* The one canonical input recipe lives in Field.module.css; composes pulls that
-   class onto this element so the search box can never drift from form inputs. */
-.searchInput {
-  composes: input from './Field.module.css';
-}
-
 .state {
   color: var(--color-text-muted);
   text-align: center;

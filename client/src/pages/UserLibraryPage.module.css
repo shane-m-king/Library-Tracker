@@ -1,7 +1,7 @@
-/* Scoped to UserLibraryPage: the page shell, the profile heading, the status
-   filter tabs, and the loading/empty/error/blocked message style. The bookcase
-   styles itself in Bookshelf; books in ShelfBook/BookCover. Mirrors
-   LibraryPage's page width + filter styling. */
+/* Scoped to UserLibraryPage: the page shell, the profile heading, and the
+   loading/empty/error/blocked message style. The bookcase styles itself in
+   Bookshelf; books in ShelfBook/BookCover; the filter/search/sort row in
+   ShelfToolbar. Mirrors LibraryPage's page width. */
 
 .page {
   /* Wider than the app's default column: the bookcase (max 1000px in
@@ -39,11 +39,6 @@
   color: var(--color-text-muted);
   font-size: 14px;
   white-space: nowrap;
-}
-
-/* Layout only - the filter pills style themselves in ToggleGroup. */
-.filters {
-  margin-bottom: 24px;
 }
 
 /* Shared loading / empty / error / blocked message style. The panel is a

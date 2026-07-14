@@ -1,46 +1,9 @@
-/* Scoped to LoanDetailModal. The two detail modals (book / loan) share ONE
-   layout recipe - every structural class here composes BookDetailModal's, so
-   a layout change there (including its 480px stacking media query) carries
-   over automatically. Only the loan-specific bits are stated locally. */
+/* Scoped to LoanDetailModal: ONLY the loan-specific bits. The structural
+   layout (cover | record, incl. the 480px stacking media query) lives in
+   detailModal.module.css, which this component's JSX imports directly -
+   see that file's header for why direct import, not cross-file composes. */
 
-.layout {
-  composes: layout from './BookDetailModal.module.css';
-}
-
-.info {
-  composes: info from './BookDetailModal.module.css';
-}
-
-.subtitle {
-  composes: subtitle from './BookDetailModal.module.css';
-}
-
-.authors {
-  composes: authors from './BookDetailModal.module.css';
-}
-
-.meta {
-  composes: meta from './BookDetailModal.module.css';
-}
-
-.facts {
-  composes: facts from './BookDetailModal.module.css';
-}
-
-.fact {
-  composes: fact from './BookDetailModal.module.css';
-}
-
-.notes {
-  composes: notes from './BookDetailModal.module.css';
-}
-
-.actions {
-  composes: actions from './BookDetailModal.module.css';
-}
-
-/* Loan-specific: who has the book - parchment, not muted, it's the record's
-   headline fact. */
+/* Who has the book - parchment, not muted, it's the record's headline fact. */
 .relationship {
   margin: 0 0 12px;
   font-size: 14px;

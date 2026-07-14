@@ -21,8 +21,12 @@ import BookSearch from '../components/BookSearch.jsx';
 import EditLibraryItemForm from '../components/EditLibraryItemForm.jsx';
 import RecordLoanForm from '../components/RecordLoanForm.jsx';
 import EditLoanForm from '../components/EditLoanForm.jsx';
-import ToggleGroup from '../components/ToggleGroup.jsx';
-import { LIBRARY_FILTERS } from '../lib/libraryFilters.js';
+import ShelfToolbar from '../components/ShelfToolbar.jsx';
+import { sortLibraryItems, matchesLibrarySearch } from '../lib/libraryView.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+// srOnly comes straight from the shared shelf module (cross-file composes
+// is banned - see shelfShared.module.css).
+import shared from '../components/shelfShared.module.css';
 import styles from './LibraryPage.module.css';
 
 // The user's library: a filterable list of their books, with add / edit / remove.
@@ -30,6 +34,12 @@ import styles from './LibraryPage.module.css';
 // the list always reflects the server.
 export default function LibraryPage() {
   const [filter, setFilter] = useState('all');
+  // How the shelf is arranged and searched - client-side over the fetched
+  // list (see libraryView.js). searchInput is the raw keystrokes; the shelf
+  // filters on the debounced copy, so typing never janks the bookcase.
+  const [sort, setSort] = useState('recent');
+  const [searchInput, setSearchInput] = useState('');
+  const query = useDebouncedValue(searchInput);
   // Drives the add-book modal. State-driven (not a route) keeps the library visible
   // behind it and lets us refetch on add without a navigation round-trip.
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -78,6 +88,14 @@ export default function LibraryPage() {
   const { items, loading, error, refetch } = useLibrary({
     status: filter === 'all' ? undefined : filter,
   });
+
+  // What the bookcase actually shows: the fetched list, narrowed by the
+  // search, in the chosen order. Plain derivation - no memo needed at
+  // bookshelf scale, and it can never fall out of sync with its inputs.
+  const shownItems = sortLibraryItems(
+    items.filter((item) => matchesLibrarySearch(item, query)),
+    sort
+  );
 
   // The loans shown below the library. We fetch all of them (both directions) once
   // and LoansSection splits them; no filter param needed here. Held at this level -
@@ -205,14 +223,24 @@ export default function LibraryPage() {
 
       <Notice notice={notice} onDismiss={clearNotice} />
 
-      {/* Filter tabs. */}
-      <ToggleGroup
-        options={LIBRARY_FILTERS}
-        value={filter}
-        onChange={setFilter}
-        ariaLabel="Filter library by status"
-        className={styles.filters}
+      {/* Filter tabs + search + sort. */}
+      <ShelfToolbar
+        filter={filter}
+        onFilterChange={setFilter}
+        query={searchInput}
+        onQueryChange={setSearchInput}
+        sort={sort}
+        onSortChange={setSort}
       />
+
+      {/* Typing reshuffles the shelf silently for a screen-reader user, so
+          say what the search found once one is active. Keyed off the
+          DEBOUNCED query, same as the shelf, so count and shelf agree. */}
+      {query.trim() !== '' && (
+        <p className={shared.srOnly} aria-live="polite">
+          {shownItems.length === 1 ? '1 book matches.' : `${shownItems.length} books match.`}
+        </p>
+      )}
 
       {/* Stale-while-revalidate: the big loading/error states only show on the
           INITIAL load (when there's nothing on screen yet). Once we have items, a
@@ -236,10 +264,11 @@ export default function LibraryPage() {
         // placeholder, and the Add book button is right above. The shelf
         // announces its emptiness to screen readers internally.
         <Bookshelf
-          // Remount when the filter changes so paging snaps back to the first
-          // caseful - "shelf 3 of All" means nothing in the Wishlist view.
-          key={filter}
-          items={items}
+          // Remount when ANY axis of the view changes (filter, sort order,
+          // settled search) so paging snaps back to the first caseful -
+          // "shelf 3" of one arrangement means nothing in another.
+          key={`${filter}|${sort}|${query}`}
+          items={shownItems}
           renderBook={(item) => (
             // Every book the case shows is on screen at once, so all covers
             // load eagerly - the shelf IS the page's LCP.

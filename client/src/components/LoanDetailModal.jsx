@@ -4,6 +4,9 @@ import Badge from './Badge.jsx';
 import BookCover from './BookCover.jsx';
 import { formatDate } from '../lib/dates.js';
 import { isOverdue } from '../lib/loans.js';
+// The structural layout is detailModal.module.css, shared with BookDetailModal
+// by importing it directly (see its header); styles holds the loan-only bits.
+import shared from './detailModal.module.css';
 import styles from './LoanDetailModal.module.css';
 
 // "Taking the loan off the shelf": everything about one loan, opened by
@@ -64,18 +67,21 @@ function DetailBody({ loan, onMarkReturned, onEdit, onDelete }) {
       : `Borrowed from ${counterpartyName}`;
 
   return (
-    <div className={styles.layout}>
-      <BookCover book={book} />
+    <div className={shared.layout}>
+      {/* natural: detail views show the real cover untrimmed (same as
+          BookDetailModal - shared.layout is the same class, so the
+          stretch-defusing align-items applies here too). */}
+      <BookCover book={book} natural />
 
-      <div className={styles.info}>
-        {book.subtitle && <p className={styles.subtitle}>{book.subtitle}</p>}
-        <p className={styles.authors}>by {authors}</p>
+      <div className={shared.info}>
+        {book.subtitle && <p className={shared.subtitle}>{book.subtitle}</p>}
+        <p className={shared.authors}>by {authors}</p>
 
         {/* The loan's headline fact: who has it. Full text weight - it's the
             reason this record exists. */}
         <p className={styles.relationship}>{relationship}</p>
 
-        <div className={styles.meta}>
+        <div className={shared.meta}>
           <Badge tone={direction === 'lent_out' ? 'warning' : 'info'}>
             {direction === 'lent_out' ? 'Lent out' : 'Borrowed'}
           </Badge>
@@ -89,13 +95,13 @@ function DetailBody({ loan, onMarkReturned, onEdit, onDelete }) {
           )}
         </div>
 
-        <dl className={styles.facts}>
-          <div className={styles.fact}>
+        <dl className={shared.facts}>
+          <div className={shared.fact}>
             <dt>Loaned</dt>
             <dd>{formatDate(loanedOn)}</dd>
           </div>
           {dueDate && (
-            <div className={styles.fact}>
+            <div className={shared.fact}>
               <dt>Due</dt>
               <dd className={overdue ? styles.overdueText : undefined}>
                 {formatDate(dueDate)}
@@ -103,17 +109,17 @@ function DetailBody({ loan, onMarkReturned, onEdit, onDelete }) {
             </div>
           )}
           {returnedOn && (
-            <div className={styles.fact}>
+            <div className={shared.fact}>
               <dt>Returned</dt>
               <dd>{formatDate(returnedOn)}</dd>
             </div>
           )}
         </dl>
 
-        {notes && <p className={styles.notes}>{notes}</p>}
+        {notes && <p className={shared.notes}>{notes}</p>}
 
         {(onMarkReturned || onEdit || onDelete) && (
-          <div className={styles.actions}>
+          <div className={shared.actions}>
             {active && onMarkReturned && (
               <Button variant="primary" size="sm" onClick={() => onMarkReturned(loan)}>
                 Mark returned

@@ -7,8 +7,12 @@ import Bookshelf from '../components/Bookshelf.jsx';
 import HearthBackdrop from '../components/HearthBackdrop.jsx';
 import BookDetailModal from '../components/BookDetailModal.jsx';
 import Button from '../components/Button.jsx';
-import ToggleGroup from '../components/ToggleGroup.jsx';
-import { LIBRARY_FILTERS } from '../lib/libraryFilters.js';
+import ShelfToolbar from '../components/ShelfToolbar.jsx';
+import { sortLibraryItems, matchesLibrarySearch } from '../lib/libraryView.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+// srOnly comes straight from the shared shelf module (cross-file composes
+// is banned - see shelfShared.module.css).
+import shared from '../components/shelfShared.module.css';
 import styles from './UserLibraryPage.module.css';
 
 // Read-only view of ANOTHER user's library, reached from a friend row (or any
@@ -23,6 +27,11 @@ export default function UserLibraryPage() {
   const { user, loading: userLoading, error: userError } = useUser(id);
 
   const [filter, setFilter] = useState('all');
+  // Shelf arrangement + search, client-side over the fetched list - the same
+  // controls as the owner's page (see LibraryPage / libraryView.js).
+  const [sort, setSort] = useState('recent');
+  const [searchInput, setSearchInput] = useState('');
+  const query = useDebouncedValue(searchInput);
   // The book currently "off the shelf" - the read-only detail modal's subject.
   const [detailItem, setDetailItem] = useState(null);
   // Hold off the library fetch until we've confirmed the user exists, so a bad id
@@ -32,6 +41,13 @@ export default function UserLibraryPage() {
     status: filter === 'all' ? undefined : filter,
     enabled: !!user,
   });
+
+  // What the bookcase shows: fetched list, narrowed by search, in the chosen
+  // order (same derivation as LibraryPage).
+  const shownItems = sortLibraryItems(
+    items.filter((item) => matchesLibrarySearch(item, query)),
+    sort
+  );
 
   // Gate on the profile first: until we know whose library this is (and that they
   // exist), there's nothing meaningful to show.
@@ -80,13 +96,22 @@ export default function UserLibraryPage() {
         </p>
       ) : (
         <>
-          <ToggleGroup
-            options={LIBRARY_FILTERS}
-            value={filter}
-            onChange={setFilter}
-            ariaLabel="Filter library by status"
-            className={styles.filters}
+          <ShelfToolbar
+            filter={filter}
+            onFilterChange={setFilter}
+            query={searchInput}
+            onQueryChange={setSearchInput}
+            sort={sort}
+            onSortChange={setSort}
           />
+
+          {/* Search results change the shelf silently for a screen-reader
+              user; announce the settled count (same as LibraryPage). */}
+          {query.trim() !== '' && (
+            <p className={shared.srOnly} aria-live="polite">
+              {shownItems.length === 1 ? '1 book matches.' : `${shownItems.length} books match.`}
+            </p>
+          )}
 
           {/* Stale-while-revalidate: the big states only show on the initial load. */}
           {loading && items.length === 0 ? (
@@ -103,10 +128,10 @@ export default function UserLibraryPage() {
             // the owner's page; the shelf announces emptiness to screen
             // readers internally.
             <Bookshelf
-              // Remount when the filter changes so paging snaps back to the
-              // first caseful (same as LibraryPage).
-              key={filter}
-              items={items}
+              // Remount when any view axis changes so paging snaps back to
+              // the first caseful (same as LibraryPage).
+              key={`${filter}|${sort}|${query}`}
+              items={shownItems}
               renderBook={(item) => (
                 // Everything the case shows is on screen at once - load eagerly.
                 <ShelfBook key={item.id} item={item} onOpen={setDetailItem} eager />

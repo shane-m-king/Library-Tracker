@@ -1,0 +1,60 @@
+/* Shared shelf primitives - the paging knob and the visually-hidden text
+   recipe - used by Bookshelf, LoanShelf, and the library pages, which IMPORT
+   this file directly and put its classes on elements from JSX (alongside
+   their own local classes).
+
+   Direct import is the repo's only cross-file sharing mechanism. Cross-file
+   `composes: x from './file.css'` is BANNED: Vite compiles it by inlining a
+   private duplicate of the source file into the consumer, which (a) doesn't
+   rebase the duplicate's relative url()s in dev (the bookcase once lost its
+   wood texture to exactly that), (b) goes STALE when the source file changes
+   - Vite's transform cache doesn't track the dependency, so the consumer
+   keeps serving the old copy until a dev-server restart (the loan modal once
+   missed a layout fix that way) - and (c) double-ships every rule in the
+   build. Same-file composes has none of these problems and stays fine. */
+
+/* The knob RECIPE, separate from its placement: small brass rounds, same
+   metal language as the Avatar coin. Bookshelf mounts it on the case's side
+   posts; LoanShelf flanks its board with it - all shelf paging in the app
+   turns the same knob. */
+.knob {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-on-accent);
+  background: linear-gradient(160deg, #e3c584, var(--color-brass));
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.knob:hover:not(:disabled) {
+  filter: brightness(1.1); /* firelight: hover glows lighter */
+}
+
+/* At either end the knob stays mounted but won't turn - dimming beats
+   disappearing, which would yank the control out from under the pointer. */
+.knob:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Visually hidden, still announced: the shelves' empty-state notes and
+   LoanShelf's page-turn live region. The empty state is furniture for
+   sighted users - bare shelves - so the words live in recipes like this. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

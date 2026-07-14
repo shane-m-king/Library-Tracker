@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useMediaQuery } from '../hooks/useMediaQuery.js';
+// shared = the app-wide knob + srOnly recipes; styles places them on THIS case.
+import shared from './shelfShared.module.css';
 import styles from './Bookshelf.module.css';
 
 // The bookcase (mockup v6, made real): a framed case - crown, side posts,
@@ -77,7 +79,7 @@ export default function Bookshelf({ items, renderBook }) {
       {paged && (
         <button
           type="button"
-          className={`${styles.arrow} ${styles.arrowLeft}`}
+          className={`${shared.knob} ${styles.arrow} ${styles.arrowLeft}`}
           onClick={() => setPage(current - 1)}
           disabled={current === 0}
           aria-label="Previous shelf page"
@@ -127,7 +129,7 @@ export default function Bookshelf({ items, renderBook }) {
       {paged && (
         <button
           type="button"
-          className={`${styles.arrow} ${styles.arrowRight}`}
+          className={`${shared.knob} ${styles.arrow} ${styles.arrowRight}`}
           onClick={() => setPage(current + 1)}
           disabled={current === pageCount - 1}
           aria-label="Next shelf page"
@@ -147,7 +149,7 @@ export default function Bookshelf({ items, renderBook }) {
 
       {/* Sighted users see bare shelves; screen readers skip an empty <ul>
           silently, so say it in words here. */}
-      {items.length === 0 && <p className={styles.srOnly}>The shelf is empty.</p>}
+      {items.length === 0 && <p className={shared.srOnly}>The shelf is empty.</p>}
     </div>
   );
 }

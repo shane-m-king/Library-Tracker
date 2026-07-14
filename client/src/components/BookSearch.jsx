@@ -5,6 +5,9 @@ import { ApiError, getErrorMessage } from '../api/apiFetch.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import Button from './Button.jsx';
 import BookCover from './BookCover.jsx';
+// The search box IS a Field input - same class, imported directly (cross-file
+// composes is banned - see shelfShared.module.css for the full story).
+import fieldStyles from './Field.module.css';
 import styles from './BookSearch.module.css';
 
 // The shortest query we'll search for. One or two stray characters match half of
@@ -120,7 +123,7 @@ export default function BookSearch({ onAdded, onSelect }) {
           page reload on Enter - the live results are already current. */}
       <form className={styles.searchForm} role="search" onSubmit={(e) => e.preventDefault()}>
         <input
-          className={styles.searchInput}
+          className={fieldStyles.input}
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
